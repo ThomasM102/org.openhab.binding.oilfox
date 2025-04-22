@@ -1,8 +1,8 @@
 /**
- * Copyright (c) 2018,2018 by the respective copyright holders.
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
  *
  * See the NOTICE file(s) distributed with this work for additional
- * information regarding copyright ownership.
+ * information.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -29,15 +29,14 @@ import javax.net.ssl.HttpsURLConnection;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.thing.Bridge;
-import org.eclipse.smarthome.core.thing.ChannelUID;
-import org.eclipse.smarthome.core.thing.Thing;
-import org.eclipse.smarthome.core.thing.ThingStatus;
-import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
-import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.oilfox.OilFoxBindingConstants;
 import org.openhab.binding.oilfox.internal.OilFoxBridgeConfiguration;
+import org.openhab.core.thing.Bridge;
+import org.openhab.core.thing.ChannelUID;
+import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.thing.ThingStatusDetail;
+import org.openhab.core.thing.binding.BaseBridgeHandler;
+import org.openhab.core.types.Command;
+import org.openhab.core.types.RefreshType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,31 +57,31 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(OilFoxBridgeHandler.class);
 
-    private OilFoxBridgeConfiguration config;
-
-    private ScheduledFuture<?> refreshJob;
-
+    private OilFoxBridgeConfiguration config = getConfigAs(OilFoxBridgeConfiguration.class);
+    private @Nullable ScheduledFuture<?> refreshJob;
     private List<OilFoxStatusListener> oilFoxStatusListeners = new CopyOnWriteArrayList<>();
+    private @Nullable String access_token = null;
+    private @Nullable String refresh_token = null;
 
     public OilFoxBridgeHandler(Bridge bridge) {
         super(bridge);
+        logger.debug("OilFoxBridgeHandler(): create object");
     }
 
-    private void ReadStatus() {
+    private void readStatus() {
         synchronized (this) {
-            if (getThing().getStatus() == ThingStatus.OFFLINE) {
-                login();
-            }
+            logger.debug("readStatus(): started");
+            login(); // refresh access token
 
             if (getThing().getStatus() != ThingStatus.ONLINE) {
                 return;
             }
 
             try {
-                JsonElement responseObject = summary(true);
+                JsonElement responseObject = getAllDevices();
                 if (responseObject.isJsonObject()) {
                     JsonObject object = responseObject.getAsJsonObject();
-                    JsonArray devices = object.get("devices").getAsJsonArray();
+                    JsonArray devices = object.get("items").getAsJsonArray();
 
                     updateStatus(ThingStatus.ONLINE);
 
@@ -102,55 +101,56 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        // TODO: Changing of settings not implemented
+        logger.debug("handleCommand(): channelUID {}, command {}", channelUID, command);
+        if (command == RefreshType.REFRESH) {
+            readStatus();
+            return;
+        }
+        logger.error("handleCommand(): unknown command: {}", command);
     }
 
     @Override
     public void initialize() {
-        config = getConfigAs(OilFoxBridgeConfiguration.class);
+        config = getConfigAs(OilFoxBridgeConfiguration.class); // reload config, maybe settings changed
+        logger.debug("initialize(): address:  {}", config.address);
+        // logger.debug("initialize(): email: {}", config.email);
+        // logger.debug("initialize(): password: {}", config.password);
+        logger.debug("initialize(): refresh:  {}", config.refresh);
         synchronized (this) {
             // cancel old job
-            if (refreshJob != null) {
-                refreshJob.cancel(false);
+            ScheduledFuture<?> localRefreshJob = this.refreshJob; // prevent race condition
+            if (localRefreshJob != null) {
+                localRefreshJob.cancel(false);
             }
-
-            String token = thing.getProperties().get(OilFoxBindingConstants.PROPERTY_TOKEN);
-            logger.info("Token {}", token);
-            if (token == null || token.equals("")) {
-                login();
-            } else {
-                updateStatus(ThingStatus.ONLINE);
-            }
+            // updateStatus(ThingStatus.ONLINE); // bridge will get online after successfully login to OilFox API
 
             refreshJob = scheduler.scheduleWithFixedDelay(() -> {
-                ReadStatus();
+                readStatus();
             }, 0, config.refresh.longValue(), TimeUnit.HOURS);
         }
     }
 
     // communication with OilFox Cloud
 
-    protected JsonElement Query(String address) throws MalformedURLException, IOException {
-        return Query(address, JsonNull.INSTANCE);
+    protected JsonElement query(String address) throws MalformedURLException, IOException {
+        return query(address, JsonNull.INSTANCE);
     }
 
-    @SuppressWarnings("null")
-    protected JsonElement Query(String path, JsonElement requestObject) throws MalformedURLException, IOException {
+    protected JsonElement query(String path, JsonElement requestObject) throws MalformedURLException, IOException {
         URL url = new URL("https://" + config.address + path);
-        logger.info("Query({})", url.toString());
+        logger.debug("query(): {}", url.toString());
         HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
         request.setReadTimeout(10000);
         request.setConnectTimeout(15000);
         request.setRequestProperty("Content-Type", "application/json");
         request.setDoInput(true);
-        if (requestObject == JsonNull.INSTANCE) {
+        if (requestObject == JsonNull.INSTANCE) { // used by getAllDevices
             if (getThing().getStatus() != ThingStatus.ONLINE) {
                 throw new IOException("Not logged in");
             }
-
-            String token = thing.getProperties().get(OilFoxBindingConstants.PROPERTY_TOKEN);
-            request.setRequestProperty("X-Auth-Token", token);
-        } else {
+            logger.debug("query(): access_token: {}", access_token);
+            request.setRequestProperty("Authorization", "Bearer " + access_token);
+        } else { // used by login()
             request.setRequestMethod("POST");
             request.setDoOutput(true);
 
@@ -165,66 +165,141 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         request.connect();
 
         switch (request.getResponseCode()) {
+            case 400:
+                logger.error("query(): login to FoxInsights API failed");
+                throw new IOException("login to FoxInsights API failed");
             case 401:
-                throw new IOException("Unauthorized");
+                logger.error("query(): request is unauthorized");
+                throw new IOException("FoxInsights API Unauthorized");
             case 200:
                 // authorized
             default:
                 Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
-                JsonParser parser = new JsonParser();
-                JsonElement element = parser.parse(reader);
+                JsonElement element = JsonParser.parseReader(reader);
                 reader.close();
+                logger.debug("query(): respose {}", element.toString());
+                return element;
+        }
+    }
+
+    protected JsonElement queryRefreshToken(String path, String payload) throws MalformedURLException, IOException {
+        URL url = new URL("https://" + config.address + path);
+        logger.debug("queryRefreshToken(): url {}", url.toString());
+        logger.debug("queryRefreshToken(): payload {}", payload);
+        HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
+        request.setReadTimeout(10000);
+        request.setConnectTimeout(15000);
+        request.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        request.setDoInput(true);
+        request.setRequestMethod("POST");
+        request.setDoOutput(true);
+
+        OutputStream os = request.getOutputStream();
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+        writer.write(payload);
+        writer.flush();
+        writer.close();
+        os.close();
+        request.connect();
+
+        switch (request.getResponseCode()) {
+            case 400:
+                logger.error("queryRefreshToken(): login to FoxInsights API failed");
+                throw new IOException("login to FoxInsights API failed");
+            case 401:
+                logger.error("queryRereshToken(): request is unauthorized");
+                throw new IOException("FoxInsights API Unauthorized");
+            case 200:
+                // authorized
+            default:
+                Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
+                JsonElement element = JsonParser.parseReader(reader);
+                reader.close();
+                logger.debug("queryRefreshToken(): respose {}", element.toString());
                 return element;
         }
     }
 
     private void login() {
-        try {
-            JsonObject requestObject = new JsonObject();
-            requestObject.addProperty("email", config.email);
-            requestObject.addProperty("password", config.password);
+        if (access_token == null) { // login with user and password
+            logger.debug("login(): no access token, login to FoxInsights API with user and password");
+            try {
+                JsonObject requestObject = new JsonObject();
+                requestObject.addProperty("email", config.email);
+                requestObject.addProperty("password", config.password);
 
-            JsonElement responseObject = Query("/v2/backoffice/session", requestObject);
+                JsonElement responseObject = query("/customer-api/v1/login", requestObject);
+                logger.trace("login(): responseObject: {}", responseObject.toString());
 
-            if (responseObject.isJsonObject()) {
-                JsonObject object = responseObject.getAsJsonObject();
-                String token = object.get("token").getAsString();
-                logger.debug("Token " + token);
-                thing.setProperty(OilFoxBindingConstants.PROPERTY_TOKEN, token);
+                if (responseObject.isJsonObject()) {
+                    JsonObject object = responseObject.getAsJsonObject();
+                    access_token = object.get("access_token").getAsString();
+                    refresh_token = object.get("refresh_token").getAsString();
+                    logger.debug("login(): access_token: {}", access_token);
+                    logger.debug("login(): refresh_token: {}", refresh_token);
+                }
+                updateStatus(ThingStatus.ONLINE);
+            } catch (IOException e) {
+                logger.error("login(): exception occurred during login with user and password: {}", e.getMessage(), e);
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             }
+        } else { // refresh access token
+            logger.debug("login(): refresh access token on FoxInsights API");
+            try {
+                String payload = "refresh_token=" + refresh_token;
+                // StringEntity entity = new StringEntity(payload, ContentType.APPLICATION_FORM_URLENCODED);
+                JsonElement responseObject = queryRefreshToken("/customer-api/v1/token", payload);
+                logger.trace("login(): responseObject: {}", responseObject.toString());
 
-            updateStatus(ThingStatus.ONLINE);
-        } catch (IOException e) {
-            logger.error("Exception occurred during execution: {}", e.getMessage(), e);
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                if (responseObject.isJsonObject()) {
+                    JsonObject object = responseObject.getAsJsonObject();
+                    access_token = object.get("access_token").getAsString();
+                    refresh_token = object.get("refresh_token").getAsString();
+                    logger.debug("login(): access_token: {}", access_token);
+                    logger.debug("login(): refresh_token: {}", refresh_token);
+                }
+
+                updateStatus(ThingStatus.ONLINE);
+            } catch (IOException e) {
+                logger.error("login(): exception occurred during refresh token: {}", e.getMessage(), e);
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            }
         }
     }
 
-    public JsonElement summary(boolean update) throws MalformedURLException, IOException {
-        JsonElement responseObject = Query("/v2/user/summary");
-        logger.debug(responseObject.toString());
-
-        //TODO: "id": "UUID",
-        //TODO: "firstName": "xxx",
-        //TODO: "lastName": "xxx",
-        //TODO: "email": "e@mail.com",
-        //TODO: "country": "DE",
-        //TODO: "zipCode": "99999",
-        //TODO: "locale": "de",
-        //TODO: "passwordSet": true,
+    public JsonElement getAllDevices() throws MalformedURLException, IOException {
+        JsonElement responseObject = query("/customer-api/v1/device");
+        logger.debug("getAllDevices(): responseObject: {}", responseObject.toString());
 
         if (responseObject.isJsonObject()) {
             JsonObject object = responseObject.getAsJsonObject();
-            JsonArray devices = object.get("devices").getAsJsonArray();
+            JsonArray devices = object.get("items").getAsJsonArray();
+
             for (JsonElement device : devices) {
-                String id = device.getAsJsonObject().get("id").getAsString();
-                String name = device.getAsJsonObject().get("name").getAsString();
                 String hwid = device.getAsJsonObject().get("hwid").getAsString();
+                logger.debug("getAllDevices(): device from API with hwid: {}", hwid);
+                // check if device with same hwid exists, HWID must be unique
+                boolean found = false;
                 for (OilFoxStatusListener oilFoxStatusListener : oilFoxStatusListeners) {
-                    try {
-                        oilFoxStatusListener.onOilFoxAdded(this.getThing().getUID(), name, id, hwid);
-                    } catch (Exception e) {
-                        logger.error("An exception occurred while calling the OilFoxStatusListener", e);
+                    @Nullable
+                    String existing_HWID = oilFoxStatusListener.getHWID();
+                    if (existing_HWID == null) {
+                        continue;
+                    }
+                    logger.debug("getAllDevices(): existing device HWID {}", existing_HWID);
+                    if (hwid.equals(existing_HWID)) {
+                        logger.debug("getAllDevices(): device with hwid {} exists", hwid);
+                        found = true;
+                    }
+                }
+                // add new found device
+                if (!found) {
+                    for (OilFoxStatusListener oilFoxStatusListener : oilFoxStatusListeners) {
+                        try {
+                            oilFoxStatusListener.onOilFoxAdded(this.getThing().getUID(), hwid);
+                        } catch (Exception e) {
+                            logger.error("An exception occurred while calling the OilFoxStatusListener", e);
+                        }
                     }
                 }
             }
@@ -233,6 +308,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     public boolean registerOilFoxStatusListener(@Nullable OilFoxStatusListener oilFoxStatusListener) {
+        logger.debug("registerOilFoxStatusListener():");
         if (oilFoxStatusListener == null) {
             throw new IllegalArgumentException("It's not allowed to pass a null OilFoxStatusListener.");
         }
@@ -240,6 +316,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     public boolean unregisterOilFoxStatusListener(OilFoxStatusListener oilFoxStatusListener) {
+        logger.debug("unregisterOilFoxStatusListener():");
         return oilFoxStatusListeners.remove(oilFoxStatusListener);
     }
 }

@@ -12,8 +12,6 @@
  */
 package org.openhab.binding.oilfox.internal;
 
-import java.math.BigDecimal;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -24,10 +22,6 @@ import org.eclipse.jdt.annotation.Nullable;
  */
 
 @NonNullByDefault
-public class OilFoxBridgeConfiguration {
-
-    public @Nullable String address;
-    public @Nullable String email;
-    public @Nullable String password;
-    public BigDecimal refresh = new BigDecimal(6);
+public class OilFoxDeviceConfiguration {
+    public @Nullable String hwid;
 }

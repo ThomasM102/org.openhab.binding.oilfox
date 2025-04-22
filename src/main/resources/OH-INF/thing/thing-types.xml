@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="oilfox"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<thing-type id="device" listed="false">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="bridge"/>
+		</supported-bridge-type-refs>
+
+		<label>OilFox Device</label>
+		<description>OilFox Device</description>
+
+		<channels>
+			<channel id="currentMeteringAt" typeId="currentMeteringAt"/>
+			<channel id="nextMeteringAt" typeId="nextMeteringAt"/>
+			<channel id="daysReach" typeId="daysReach"/>
+			<channel id="batteryLevel" typeId="batteryLevel"/>
+			<channel id="fillLevelPercent" typeId="fillLevelPercent"/>
+			<channel id="fillLevelQuantity" typeId="fillLevelQuantity"/>
+			<channel id="quantityUnit" typeId="quantityUnit"/>
+		</channels>
+
+		<representation-property>hwid</representation-property>
+	</thing-type>
+
+	<!-- Channel Types -->
+	<channel-type id="currentMeteringAt">
+		<item-type>DateTime</item-type>
+		<label>current metering at</label>
+		<description>current metering at</description>
+	</channel-type>
+
+	<channel-type id="nextMeteringAt">
+		<item-type>DateTime</item-type>
+		<label>next metering at</label>
+		<description>next metering at</description>
+	</channel-type>
+
+	<channel-type id="daysReach">
+		<item-type>Number</item-type>
+		<label>days reach</label>
+		<description>days reach</description>
+	</channel-type>
+
+	<channel-type id="batteryLevel">
+		<item-type>String</item-type>
+		<label>battery level</label>
+		<description>battery level</description>
+	</channel-type>
+
+	<channel-type id="fillLevelPercent">
+		<item-type>Number</item-type>
+		<label>fill level in percentage</label>
+		<description>fill level in percentage, 0 to 100</description>
+		<state min="0" max="100" pattern="%.0f %%"></state>
+	</channel-type>
+
+	<channel-type id="fillLevelQuantity">
+		<item-type>Number</item-type>
+		<label>fill level quantity</label>
+		<description>fill level quantity</description>
+	</channel-type>
+
+	<channel-type id="quantityUnit">
+		<item-type>String</item-type>
+		<label>quantity unit</label>
+		<description>quantity unit</description>
+	</channel-type>
+</thing:thing-descriptions>

@@ -1,20 +1,36 @@
+/**
+ * Copyright (c) 2010-2024 Contributors to the openHAB project
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
 package org.openhab.binding.oilfox.handler;
 
-import java.io.IOException;
-import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.MalformedURLException;
 
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.smarthome.core.library.types.DecimalType;
-import org.eclipse.smarthome.core.thing.ChannelUID;
-import org.eclipse.smarthome.core.thing.Thing;
-import org.eclipse.smarthome.core.thing.ThingStatus;
-import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.eclipse.smarthome.core.thing.ThingUID;
-import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
-import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.oilfox.OilFoxBindingConstants;
+import org.openhab.binding.oilfox.internal.OilFoxDeviceConfiguration;
+import org.openhab.core.library.types.DateTimeType;
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.StringType;
+import org.openhab.core.thing.Bridge;
+import org.openhab.core.thing.ChannelUID;
+import org.openhab.core.thing.Thing;
+import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.thing.ThingStatusDetail;
+import org.openhab.core.thing.ThingUID;
+import org.openhab.core.thing.binding.BaseThingHandler;
+import org.openhab.core.thing.binding.ThingHandler;
+import org.openhab.core.types.Command;
+import org.openhab.core.types.RefreshType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +38,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+/**
+ *
+ * @author Roland Moser - Initial contribution
+ */
+
+@NonNullByDefault
 public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListener {
 
     private final Logger logger = LoggerFactory.getLogger(OilFoxHandler.class);
@@ -32,22 +54,38 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
     @Override
     public void initialize() {
-        initializeThing((getBridge() == null) ? null : getBridge().getStatus());
-    }
 
-    private void initializeThing(ThingStatus bridgeStatus) {
-        String oilfoxid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_OILFOXID);
-        if (oilfoxid == null) {
-            logger.error("OilFoxId is not set in {}", this.getThing().getUID());
-            return;
+        @Nullable
+        Bridge bridge = this.getBridge(); // prevent race condition
+        @Nullable
+        ThingStatus bridgeStatus = (bridge == null) ? null : bridge.getStatus();
+        String hwid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID);
+        if ((hwid == null) || hwid.isEmpty()) {
+            logger.debug("initialize(): {}: hwid not set in thing proberty", this.getThing().getUID());
+            // if thing is from texual definition, we find hwid in configuration
+            @Nullable
+            final OilFoxDeviceConfiguration config = getConfigAs(OilFoxDeviceConfiguration.class);
+            hwid = config.hwid;
+            if ((hwid == null) || hwid.isEmpty()) {
+                logger.error("initialize(): {}: hwid not set", this.getThing().getUID());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "hwid missing");
+                return;
+            } else {
+                logger.debug("initialize(): {}: set hwid {} from thing configuration", this.getThing().getUID(), hwid);
+                thing.setProperty("hwid", hwid);
+            }
         }
+        logger.debug("initialize(): thing ID: {}, hwid: {}, bridge status: {}", getThing().getUID(), hwid,
+                bridgeStatus);
 
-        logger.debug("initializeThing thing {} bridge status {}", getThing().getUID(), bridgeStatus);
-
-        if (getBridge() != null) {
+        if (bridge != null) {
             if (bridgeStatus == ThingStatus.ONLINE) {
-                ((OilFoxBridgeHandler) this.getBridge().getHandler()).registerOilFoxStatusListener(this);
-                updateStatus(ThingStatus.ONLINE);
+                ThingHandler handler = bridge.getHandler();
+                if (handler != null) {
+                    ((OilFoxBridgeHandler) handler).registerOilFoxStatusListener(this);
+                    updateStatus(ThingStatus.ONLINE);
+                } else {
+                }
             } else {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
             }
@@ -57,64 +95,110 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
     }
 
     @Override
-    public void handleCommand(@NonNull ChannelUID channelUID, Command command) {
+    public void handleCommand(ChannelUID channelUID, Command command) {
+        logger.debug("handleCommand(): channelUID: {}, command: {}", channelUID, command);
+        if (command == RefreshType.REFRESH) {
+            @Nullable
+            Bridge bridge = this.getBridge(); // prevent race condition
+            if (bridge == null) {
+                logger.error("handleCommand(): bridge not found");
+                return;
+            }
+            @Nullable
+            OilFoxBridgeHandler oilfoxBridgeHandler = (OilFoxBridgeHandler) bridge.getHandler(); // get bridge handler
+            if (oilfoxBridgeHandler == null) {
+                logger.error("handleCommand(): bridge handler not found");
+                return;
+            }
+            oilfoxBridgeHandler.handleCommand(channelUID, command);
+            return;
+        }
+        logger.error("handleCommand(): unknown command: {}", command);
     }
 
     @Override
-    public void onOilFoxRemoved(ThingUID bridge, String oilfox) {
+    public void handleRemoval() {
+        logger.debug("handleRemoval():");
+        @Nullable
+        Bridge bridge = this.getBridge(); // prevent race condition
+        if (bridge != null) {
+            ThingHandler handler = bridge.getHandler();
+            if (handler != null) {
+                ((OilFoxBridgeHandler) handler).unregisterOilFoxStatusListener(this);
+            }
+        }
+        super.handleRemoval();
     }
 
     @Override
-    public void onOilFoxAdded(ThingUID bridge, String name, String id, String hwid) {
+    public void onOilFoxRemoved(@Nullable ThingUID bridge, @Nullable String hwid) {
+        logger.debug("onOilFoxRemoved(): bridge {}, hwid {}", bridge, hwid);
+    }
+
+    @Override
+    public void onOilFoxAdded(@Nullable ThingUID bridge, @Nullable String hwid) {
+        logger.debug("onOilFoxAdded(): bridge {}, hwid {}", bridge, hwid);
+    }
+
+    @Override
+    public @Nullable String getHWID() {
+        String hwid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID);
+        logger.debug("getHWID(): hwid {}", hwid);
+        return hwid;
     }
 
     @Override
     public void onOilFoxRefresh(JsonArray devices) {
-        String oilfoxid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_OILFOXID);
+        String hwid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID);
+        logger.debug("onOilFoxRefresh(): refresh hwid {}", hwid);
+        if (hwid == null) {
+            logger.error("onOilFoxRefresh(): hwid is not set");
+            return;
+        }
+
         for (JsonElement device : devices) {
-            if (!device.isJsonObject())
+            if (!device.isJsonObject()) {
                 continue;
-
+            }
             JsonObject object = device.getAsJsonObject();
-
-            String deviceid = object.get("id").getAsString();
-            if (!oilfoxid.equals(deviceid) )
+            String deviceHWID = object.get("hwid").getAsString();
+            logger.debug("onOilFoxRefresh(): source hwid {}", deviceHWID);
+            if (!hwid.equals(deviceHWID)) {
                 continue;
+            }
 
-            BigInteger tankHeight = object.get("tankHeight").getAsBigInteger();
-            this.updateState(OilFoxBindingConstants.CHANNEL_HEIGHT, DecimalType.valueOf(tankHeight.toString()));
-            BigInteger tankVolume = object.get("tankVolume").getAsBigInteger();
-            this.updateState(OilFoxBindingConstants.CHANNEL_VOLUME, DecimalType.valueOf(tankVolume.toString()));
-            BigInteger tankOffset = object.get("tankOffset").getAsBigInteger();
-            this.updateState(OilFoxBindingConstants.CHANNEL_OFFSET, DecimalType.valueOf(tankOffset.toString()));
-            //TODO: "tankShape" : "SQUARED"
-            //TODO: "tankIsUsableVolume": false
-            //TODO: "tankUsableVolume": 1000
-            //TODO: "productId": "UUID"
-            //TODO: "notificationInfoEnabled": true,
-            //TODO: "notificationInfoPercentage": 25,
-            //TODO: "notificationAlertEnabled": true,
-            //TODO: "notificationAlertPercentage": 15,
-            //TODO: "measurementIntervalInSeconds": 86400
+            String currentMeteringAt = object.get(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT).getAsString();
+            logger.debug("onOilFoxRefresh(): currentMeteringAt {}", currentMeteringAt);
+            this.updateState(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT, new DateTimeType(currentMeteringAt));
 
-            JsonObject metering = object.get("metering").getAsJsonObject();
-            BigDecimal value = metering.get("value").getAsBigDecimal();
-            this.updateState(OilFoxBindingConstants.CHANNEL_VALUE, DecimalType.valueOf(value.toString()));
-            BigDecimal fillingpercentage = metering.get("fillingPercentage").getAsBigDecimal();
-            this.updateState(OilFoxBindingConstants.CHANNEL_FILLINGPERCENTAGE,
-                DecimalType.valueOf(fillingpercentage.toString()));
-            BigDecimal liters = metering.get("liters").getAsBigDecimal();
-            this.updateState(OilFoxBindingConstants.CHANNEL_LITERS, DecimalType.valueOf(liters.toString()));
-            BigDecimal currentOilHeight = metering.get("currentOilHeight").getAsBigDecimal();
-            this.updateState(OilFoxBindingConstants.CHANNEL_CURRENTOILHEIGHT,
-                DecimalType.valueOf(currentOilHeight.toString()));
-            //TODO: "serverDate": 1568035451021
-            BigInteger battery = metering.get("battery").getAsBigInteger();
-            this.updateState(OilFoxBindingConstants.CHANNEL_BATTERYLEVEL, DecimalType.valueOf(battery.toString()));
+            String nextMeteringAt = object.get(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT).getAsString();
+            logger.debug("onOilFoxRefresh(): nextMeteringAt {}", nextMeteringAt);
+            this.updateState(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT, new DateTimeType(nextMeteringAt));
 
-            //TODO: "address"
-            //TODO: "partner"
-            //TODO: "chartData"
+            BigInteger daysReach = object.get(OilFoxBindingConstants.CHANNEL_DAYS_REACH).getAsBigInteger();
+            logger.debug("onOilFoxRefresh(): daysReach {}", daysReach);
+            this.updateState(OilFoxBindingConstants.CHANNEL_DAYS_REACH, DecimalType.valueOf(daysReach.toString()));
+
+            String batteryLevel = object.get(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL).getAsString();
+            logger.debug("onOilFoxRefresh(): batteryLevel {}", batteryLevel);
+            this.updateState(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL, new StringType(batteryLevel));
+
+            BigInteger fillLevelPercent = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT)
+                    .getAsBigInteger();
+            logger.debug("onOilFoxRefresh(): fillLevelPercent {}", fillLevelPercent);
+            this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT,
+                    DecimalType.valueOf(fillLevelPercent.toString()));
+
+            BigInteger fillLevelQuantity = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY)
+                    .getAsBigInteger();
+            logger.debug("onOilFoxRefresh(): fillLevelQuantity {}", fillLevelQuantity);
+            this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
+                    DecimalType.valueOf(fillLevelQuantity.toString()));
+
+            String quantityUnit = object.get(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT).getAsString();
+            logger.debug("onOilFoxRefresh(): quantityUnit {}", quantityUnit);
+            this.updateState(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT, new StringType(quantityUnit));
+
             updateStatus(ThingStatus.ONLINE);
             return;
         }
