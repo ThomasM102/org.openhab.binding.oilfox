@@ -1,0 +1,92 @@
+#!/bin/bash
+# install OilFox binding on Ubuntu/Debian
+# download ths script an run as root
+# prerequisites: - openHAB installed
+#                - Java Development Kit and Apache Maven installed
+#                  e.g. install Java 17 JDK and Maven on Ubuntu 24.04 with openHAB 4.3.x: sudo apt-get -y install openjdk-17-jdk maven
+
+TARGET="/usr/src"
+
+# get openHAB version
+OPENHAB_VERSION=`openhab-cli info | grep "Version:" | cut -d" " -f6`
+if [ $? -ne 0 ]; then
+    echo "ERROR: openHAB not installed"
+    exit 1
+fi
+echo "INFO: openHAB version $OPENHAB_VERSION"
+
+OILFOX_BRANCH=`echo ${OPENHAB_VERSION%?}x`
+echo "INFO: use OilFox branch $OILFOX_BRANCH"
+
+echo "INFO: install openhab addon sources"
+if [ -d "$TARGET/openhab-addons" ]; then
+  echo "INFO: openhab addon sources exists, update repository"
+  cd "$TARGET/openhab-addons"
+  git checkout main
+  git pull
+  git pull --tags
+else
+  echo "INFO: clone openHAB addon sources git"
+  git clone https://github.com/openhab/openhab-addons "$TARGET/openhab-addons"
+  if [ $? -ne 0 ]; then
+      echo "ERROR: clone openHAB addon failed"
+      exit 1
+  fi
+fi
+
+cd "$TARGET/openhab-addons"
+git checkout "$OPENHAB_VERSION"
+if [ $? -ne 0 ]; then
+    echo "ERROR: update openHAB addon repository failed"
+    exit 1
+fi
+
+if [ "OILFOX_BRANCH" != "master" ]; then   # there can be rebased on development branch, download full repository
+  echo "INFO: delete current development repository"
+  rm -rf "$TARGET/openhab-addons/bundles/org.openhab.binding.oilfox"
+fi
+
+echo "INFO: install OilFox binding sources"
+if [ -d "$TARGET/openhab-addons/bundles/org.openhab.binding.oilfox/" ]; then
+  echo "INFO: OilFox binding sources exists"
+else
+  echo "INFO: clone OilFox binding sources git"
+  git clone https://github.com/ThomasM102/org.openhab.binding.oilfox "$TARGET/openhab-addons/bundles/org.openhab.binding.oilfox"
+  if [ $? -ne 0 ]; then
+      echo "ERROR: clone OilFox binding addon failed"
+      exit 1
+  fi
+fi
+
+echo "INFO: checkout OilFox binding branch"
+cd "$TARGET/openhab-addons/bundles/org.openhab.binding.oilfox"
+git checkout "$OILFOX_BRANCH"
+git pull
+if [ $? -ne 0 ]; then
+    echo "ERROR: update OilFox binding repository failed"
+    exit 1
+fi
+# cleanup old builds
+rm -rf "$TARGET/openhab-addons/bundles/org.openhab.binding.oilfox/target"
+rm -rf "$TARGET/openhab-addons/bundles/org.openhab.binding.oilfox/src/main/history"
+
+echo "INFO: patch OilFox version file to match openHAB version"
+cp "$TARGET"/openhab-addons/bundles/org.openhab.binding.oilfox/pom.xml "$TARGET"/openhab-addons/bundles/org.openhab.binding.oilfox/pom.xml.org
+sed -i '/SNAPSHOT/c\    <version>'$OPENHAB_VERSION'</version\>' "$TARGET"/openhab-addons/bundles/org.openhab.binding.oilfox/pom.xml
+
+echo "INFO: build OilFox binding"
+cd "$TARGET/openhab-addons/bundles/org.openhab.binding.oilfox"
+mvn clean install
+if [ $? -ne 0 ]; then
+    echo "ERROR: build OilFox binding failed"
+    exit 1
+fi
+mv "$TARGET"/openhab-addons/bundles/org.openhab.binding.oilfox/pom.xml.org "$TARGET"/openhab-addons/bundles/org.openhab.binding.oilfox/pom.xml
+
+echo "INFO: install OilFox binding"
+rm -f /usr/share/openhab/addons/org.openhab.binding.oilfox*
+cp "$TARGET"/openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-"$OPENHAB_VERSION".jar /usr/share/openhab/addons/
+
+echo "INFO: restart openHAB"
+service openhab restart
+exit 0
