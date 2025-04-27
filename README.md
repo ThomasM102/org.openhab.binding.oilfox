@@ -1,95 +1,86 @@
-# oilfox Binding
+# OilFox Binding
 
-_Give some details about what this binding is meant for - a protocol, system, specific device._
+Binding for [OilFox](https://foxinsights.ai/) smart remote tank monitoring system.
 
-_If possible, provide some resources like pictures (only PNG is supported currently), a video, etc. to give an impression of what can be done with this binding._
-_You can place such resources into a `doc` folder next to this README.md._
-
-_Put each sentence in a separate line to improve readability of diffs._
+This binding allows you to check the fuel level in your tank.
 
 ## Supported Things
 
-_Please describe the different supported things / devices including their ThingTypeUID within this section._
-_Which different types are supported, which models were tested etc.?_
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
 
-- `bridge`: Short description of the Bridge, if any
-- `sample`: Short description of the Thing with the ThingTypeUID `sample`
+| Thing type               | Name          |
+|--------------------------|---------------|
+| bridge                   | OilFox Bridge |
+| device                   | OilFox Device |
+
+
+- `bridge`: Connect OpenHAB to OilFox cloud server via [FoxInsights Customer API](https://github.com/foxinsights/customer-api)
+- `device`: A OilFox tank fill level measuring hardware device
 
 ## Discovery
 
-_Describe the available auto-discovery features here._
-_Mention for what it works and what needs to be kept in mind when using it._
+An account must be specified in the OilFox bridge configuration, all OilFox devices for an account are discovered automatically.
 
 ## Binding Configuration
 
-_If your binding requires or supports general configuration settings, please create a folder ```cfg``` and place the configuration file ```<bindingId>.cfg``` inside it._
-_In this section, you should link to this file and provide some information about the options._
-_The file could e.g. look like:_
+There are several settings for an account:
 
-```
-# Configuration for the oilfox Binding
-#
-# Default secret key for the pairing of the oilfox Thing.
-# It has to be between 10-40 (alphanumeric) characters.
-# This may be changed by the user for security reasons.
-secret=openHABSecret
-```
+| Name     | Required |    Default    | Description                            |
+|----------|----------|---------------|----------------------------------------|
+| address  |   yes    | api.oilfox.io | OilFox Cloud server address            |
+| email    |   yes    |               | Email registerd on the OilFox Cloud    |
+| password |   yes    |               | Password registerd on the OilFox Cloud |
+| refresh  |   yes    |             6 | refresh interval in hours              |
 
-_Note that it is planned to generate some part of this based on the information that is available within ```src/main/resources/OH-INF/binding``` of your binding._
-
-_If your binding does not offer any generic configurations, you can remove this section completely._
 
 ## Thing Configuration
 
-_Describe what is needed to manually configure a thing, either through the UI or via a thing-file._
-_This should be mainly about its mandatory and optional configuration parameters._
+### `device` Thing Configuration
 
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
-
-### `sample` Thing Configuration
-
-| Name            | Type    | Description                           | Default | Required | Advanced |
-|-----------------|---------|---------------------------------------|---------|----------|----------|
-| hostname        | text    | Hostname or IP address of the device  | N/A     | yes      | no       |
-| password        | text    | Password to access the device         | N/A     | yes      | no       |
-| refreshInterval | integer | Interval the device is polled in sec. | 600     | no       | yes      |
+| Name     | Required |    Default    | Description                            |
+|----------|----------|---------------|----------------------------------------|
+| hwid     |   yes    |               | OilFox device hardware address         |
 
 ## Channels
 
-_Here you should provide information about available channel types, what their meaning is and how they can be used._
+|      Channel      | Type     | Read/Write | Description                                 |
+|-------------------|----------|------------|---------------------------------------------|
+| hwid              | String   |  readonly  | hardware ID of the device                   |
+| currentMeteringAt | DateTime |  readonly  | RFC3339 timestamp                           |
+| nextMeteringAt    | DateTime |  readonly  | RFC3339 timestamp                           |
+| daysReach         | Number   |  readonly  | estimated days until the storage runs empty |
+| batteryLevel      | String   |  readonly  | enum of the battery level, see below        |
+| fillLevelPercent  | Number   |  readonly  | fill level in %, 0-100                      |
+| fillLevelQuantity | Number   |  readonly  | fill level in `kg` or `L`                   |
+| quantityUnit      | String   |  readonly  | unit of the fill level: `kg` or `L`         |
 
-_Note that it is planned to generate some part of this based on the XML files within ```src/main/resources/OH-INF/thing``` of your binding._
+### Enum batteryLevel
 
-| Channel | Type   | Read/Write | Description                 |
-|---------|--------|------------|-----------------------------|
-| control | Switch | RW         | This is the control channel |
+| name     | description            |
+|----------|------------------------|
+| FULL     | Full battery level     |
+| GOOD     | Good battery level     |
+| MEDIUM   | Medium battery level   |
+| WARNING  | Low battery level      |
+| CRITICAL | Critical battery level |
+
 
 ## Full Example
-
-_Provide a full usage example based on textual configuration files._
-_*.things, *.items examples are mandatory as textual configuration is well used by many users._
-_*.sitemap examples are optional._
 
 ### Thing Configuration
 
 ```java
-Example thing configuration goes here.
+Bridge oilfox:bridge:mybridge [ email="my-email@provider.com", password="my-password", refresh=8 ]
+Thing oilfox:device:mybridge:mydevice "OilFox Device" (oilfox:bridge:mybridge) @ "Oiltank Room" [ hwid="XX123456789" ]
 ```
 
 ### Item Configuration
 
 ```java
-Example item configuration goes here.
+DateTime Current_Metering_At "current metering at" {channel="oilfox:device:mybridge:mydevice:currentMeteringAt"}
+DateTime Next_Metering_At "next metering at" {channel="oilfox:device:mybridge:mydevice:nextMeteringAt"}
+Number Days_Reach "days reach" {channel="oilfox:device:mybridge:mydevice:daysReach", stateDescription=" "[ pattern="%.0f days" ]}
+String Battery_Level "battery level" {channel="oilfox:device:mybridge:mydevice:batteryLevel"}
+Number Fill_Level_Percent "fill level percent" {channel="oilfox:device:mybridge:mydevice:fillLevelPercent"}
+Number Fill_Level_Quantity "fill level quantity" {channel="oilfox:device:mybridge:mydevice:fillLevelQuantity"}
+String Quantity_Unit "quantity unit" {channel="oilfox:device:mybridge:mydevice:quantityUnit"}
 ```
-
-### Sitemap Configuration
-
-```perl
-Optional Sitemap configuration goes here.
-Remove this section, if not needed.
-```
-
-## Any custom content here!
-
-_Feel free to add additional sections for whatever you think should also be mentioned about your binding!_
