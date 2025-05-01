@@ -42,6 +42,7 @@
 		<item-type>Number</item-type>
 		<label>Days Reach</label>
 		<description>days reach</description>
+		<state min="0" pattern="%.0f days"></state>
 	</channel-type>
 
 	<channel-type id="batteryLevel">
@@ -51,7 +52,7 @@
 	</channel-type>
 
 	<channel-type id="fillLevelPercent">
-		<item-type>Number</item-type>
+		<item-type unitHint="%">Number:Dimensionless</item-type>
 		<label>Fill Level Percentage</label>
 		<description>fill level in percentage, 0 to 100</description>
 		<state min="0" max="100" pattern="%.0f %%"></state>
