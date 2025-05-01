@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.openhab.addons.bundles</groupId>
     <artifactId>org.openhab.addons.reactor.bundles</artifactId>
-    <version>4.3.5-SNAPSHOT</version>
+    <version>5.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.openhab.binding.oilfox</artifactId>
@@ -16,9 +16,18 @@
 
   <repositories>
     <repository>
+      <releases>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
       <id>jcenter</id>
       <name>JCenter Repository</name>
       <url>https://jcenter.bintray.com</url>
+    </repository>
+    <repository>
       <releases>
         <enabled>true</enabled>
         <updatePolicy>never</updatePolicy>
@@ -26,30 +35,21 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </repository>
-    <repository>
       <id>openhab-artifactory-release</id>
       <name>JFrog Artifactory Repository</name>
       <url>https://openhab.jfrog.io/openhab/libs-release</url>
+    </repository>
+    <repository>
       <releases>
-        <enabled>true</enabled>
+        <enabled>false</enabled>
         <updatePolicy>never</updatePolicy>
       </releases>
       <snapshots>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
       </snapshots>
-    </repository>
-    <repository>
       <id>openhab-snapshots-release</id>
       <name>JFrog Artifactory Repository</name>
       <url>https://openhab.jfrog.io/openhab/libs-snapshot-local</url>
-      <releases>
-        <enabled>false</enabled>
-        <updatePolicy>never</updatePolicy>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
     </repository>
   </repositories>
 
