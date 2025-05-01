@@ -11,6 +11,7 @@
 
 		<config-description>
 			<parameter name="address" type="text">
+				<context>network-address</context>
 				<label>Hostname</label>
 				<description>OilFox cloud server</description>
 				<required>true</required>
@@ -18,6 +19,7 @@
 			</parameter>
 
 			<parameter name="email" type="text">
+				<context>email</context>
 				<label>Email On OilFox Cloud</label>
 				<description>Provide the Email registerd on the OilFox cloud</description>
 				<required>true</required>
