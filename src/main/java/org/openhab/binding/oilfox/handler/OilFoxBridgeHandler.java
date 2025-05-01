@@ -19,6 +19,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -137,86 +139,94 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     protected JsonElement query(String path, JsonElement requestObject) throws MalformedURLException, IOException {
-        URL url = new URL("https://" + config.address + path);
-        logger.debug("query(): {}", url.toString());
-        HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
-        request.setReadTimeout(10000);
-        request.setConnectTimeout(15000);
-        request.setRequestProperty("Content-Type", "application/json");
-        request.setDoInput(true);
-        if (requestObject == JsonNull.INSTANCE) { // used by getAllDevices
-            if (getThing().getStatus() != ThingStatus.ONLINE) {
-                throw new IOException("Not logged in");
+        try {
+            URL url = new URI("https://" + config.address + path).toURL();
+            logger.debug("query(): {}", url.toString());
+            HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
+            request.setReadTimeout(10000);
+            request.setConnectTimeout(15000);
+            request.setRequestProperty("Content-Type", "application/json");
+            request.setDoInput(true);
+            if (requestObject == JsonNull.INSTANCE) { // used by getAllDevices
+                if (getThing().getStatus() != ThingStatus.ONLINE) {
+                    throw new IOException("Not logged in");
+                }
+                logger.debug("query(): access_token: {}", access_token);
+                request.setRequestProperty("Authorization", "Bearer " + access_token);
+            } else { // used by login()
+                request.setRequestMethod("POST");
+                request.setDoOutput(true);
+
+                OutputStream os = request.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                writer.write(requestObject.toString());
+                writer.flush();
+                writer.close();
+                os.close();
             }
-            logger.debug("query(): access_token: {}", access_token);
-            request.setRequestProperty("Authorization", "Bearer " + access_token);
-        } else { // used by login()
+
+            request.connect();
+
+            switch (request.getResponseCode()) {
+                case 400:
+                    logger.error("query(): login to FoxInsights API failed");
+                    throw new IOException("login to FoxInsights API failed");
+                case 401:
+                    logger.error("query(): request is unauthorized");
+                    throw new IOException("FoxInsights API Unauthorized");
+                case 200:
+                    // authorized
+                default:
+                    Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
+                    JsonElement element = JsonParser.parseReader(reader);
+                    reader.close();
+                    logger.debug("query(): respose {}", element.toString());
+                    return element;
+            }
+        } catch (URISyntaxException e) {
+            throw new MalformedURLException("invalid url");
+        }
+    }
+
+    protected JsonElement queryRefreshToken(String path, String payload) throws MalformedURLException, IOException {
+        try {
+            URL url = new URI("https://" + config.address + path).toURL();
+            logger.debug("queryRefreshToken(): url {}", url.toString());
+            logger.debug("queryRefreshToken(): payload {}", payload);
+            HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
+            request.setReadTimeout(10000);
+            request.setConnectTimeout(15000);
+            request.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            request.setDoInput(true);
             request.setRequestMethod("POST");
             request.setDoOutput(true);
 
             OutputStream os = request.getOutputStream();
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-            writer.write(requestObject.toString());
+            writer.write(payload);
             writer.flush();
             writer.close();
             os.close();
-        }
+            request.connect();
 
-        request.connect();
-
-        switch (request.getResponseCode()) {
-            case 400:
-                logger.error("query(): login to FoxInsights API failed");
-                throw new IOException("login to FoxInsights API failed");
-            case 401:
-                logger.error("query(): request is unauthorized");
-                throw new IOException("FoxInsights API Unauthorized");
-            case 200:
-                // authorized
-            default:
-                Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
-                JsonElement element = JsonParser.parseReader(reader);
-                reader.close();
-                logger.debug("query(): respose {}", element.toString());
-                return element;
-        }
-    }
-
-    protected JsonElement queryRefreshToken(String path, String payload) throws MalformedURLException, IOException {
-        URL url = new URL("https://" + config.address + path);
-        logger.debug("queryRefreshToken(): url {}", url.toString());
-        logger.debug("queryRefreshToken(): payload {}", payload);
-        HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
-        request.setReadTimeout(10000);
-        request.setConnectTimeout(15000);
-        request.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        request.setDoInput(true);
-        request.setRequestMethod("POST");
-        request.setDoOutput(true);
-
-        OutputStream os = request.getOutputStream();
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-        writer.write(payload);
-        writer.flush();
-        writer.close();
-        os.close();
-        request.connect();
-
-        switch (request.getResponseCode()) {
-            case 400:
-                logger.error("queryRefreshToken(): login to FoxInsights API failed");
-                throw new IOException("login to FoxInsights API failed");
-            case 401:
-                logger.error("queryRereshToken(): request is unauthorized");
-                throw new IOException("FoxInsights API Unauthorized");
-            case 200:
-                // authorized
-            default:
-                Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
-                JsonElement element = JsonParser.parseReader(reader);
-                reader.close();
-                logger.debug("queryRefreshToken(): respose {}", element.toString());
-                return element;
+            switch (request.getResponseCode()) {
+                case 400:
+                    logger.error("queryRefreshToken(): login to FoxInsights API failed");
+                    throw new IOException("login to FoxInsights API failed");
+                case 401:
+                    logger.error("queryRereshToken(): request is unauthorized");
+                    throw new IOException("FoxInsights API Unauthorized");
+                case 200:
+                    // authorized
+                default:
+                    Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
+                    JsonElement element = JsonParser.parseReader(reader);
+                    reader.close();
+                    logger.debug("queryRefreshToken(): respose {}", element.toString());
+                    return element;
+            }
+        } catch (URISyntaxException e) {
+            throw new MalformedURLException("invalid url");
         }
     }
 
