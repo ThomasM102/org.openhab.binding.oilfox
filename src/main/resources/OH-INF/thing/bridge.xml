@@ -12,26 +12,26 @@
 		<config-description>
 			<parameter name="address" type="text">
 				<label>Hostname</label>
-				<description>OilFox Cloud server</description>
+				<description>OilFox cloud server</description>
 				<required>true</required>
 				<default>api.oilfox.io</default>
 			</parameter>
 
 			<parameter name="email" type="text">
-				<label>Email on OilFox Cloud</label>
-				<description>Provide the Email registerd on the OilFox Cloud</description>
+				<label>Email On OilFox Cloud</label>
+				<description>Provide the Email registerd on the OilFox cloud</description>
 				<required>true</required>
 			</parameter>
 
 			<parameter name="password" type="text">
 				<context>password</context>
-				<label>Password on OilFox Cloud</label>
-				<description>Provide the password registerd on the OilFox Cloud</description>
+				<label>Password On OilFox Cloud</label>
+				<description>Provide the password registerd on the OilFox cloud</description>
 				<required>true</required>
 			</parameter>
 
 			<parameter name="refresh" type="integer" required="true" min="1" max="65335">
-				<label>Refresh interval</label>
+				<label>Refresh Interval</label>
 				<description>Specifies the refresh interval in hours.</description>
 				<required>true</required>
 				<default>6</default>
