@@ -28,44 +28,44 @@
 	<!-- Channel Types -->
 	<channel-type id="currentMeteringAt">
 		<item-type>DateTime</item-type>
-		<label>current metering at</label>
+		<label>Current Metering</label>
 		<description>current metering at</description>
 	</channel-type>
 
 	<channel-type id="nextMeteringAt">
 		<item-type>DateTime</item-type>
-		<label>next metering at</label>
+		<label>Next Metering</label>
 		<description>next metering at</description>
 	</channel-type>
 
 	<channel-type id="daysReach">
 		<item-type>Number</item-type>
-		<label>days reach</label>
+		<label>Days Reach</label>
 		<description>days reach</description>
 	</channel-type>
 
 	<channel-type id="batteryLevel">
 		<item-type>String</item-type>
-		<label>battery level</label>
+		<label>Battery Level</label>
 		<description>battery level</description>
 	</channel-type>
 
 	<channel-type id="fillLevelPercent">
 		<item-type>Number</item-type>
-		<label>fill level in percentage</label>
+		<label>Fill Level Percentage</label>
 		<description>fill level in percentage, 0 to 100</description>
 		<state min="0" max="100" pattern="%.0f %%"></state>
 	</channel-type>
 
 	<channel-type id="fillLevelQuantity">
 		<item-type>Number</item-type>
-		<label>fill level quantity</label>
+		<label>Fill Level Quantity</label>
 		<description>fill level quantity</description>
 	</channel-type>
 
 	<channel-type id="quantityUnit">
 		<item-type>String</item-type>
-		<label>quantity unit</label>
+		<label>Quantity Unit</label>
 		<description>quantity unit</description>
 	</channel-type>
 </thing:thing-descriptions>
