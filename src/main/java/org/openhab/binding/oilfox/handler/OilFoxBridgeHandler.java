@@ -177,11 +177,14 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 case 200:
                     // authorized
                 default:
-                    Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
-                    JsonElement element = JsonParser.parseReader(reader);
-                    reader.close();
-                    logger.debug("query(): respose {}", element.toString());
-                    return element;
+                    try (Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8")) {
+                        JsonElement element = JsonParser.parseReader(reader);
+                        reader.close();
+                        logger.debug("query(): respose {}", element.toString());
+                        return element;
+                    } catch (IOException e) {
+                        throw new IOException("query(): create InputStreamReader() failed");
+                    }
             }
         } catch (URISyntaxException e) {
             throw new MalformedURLException("invalid url");
@@ -219,11 +222,14 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 case 200:
                     // authorized
                 default:
-                    Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
-                    JsonElement element = JsonParser.parseReader(reader);
-                    reader.close();
-                    logger.debug("queryRefreshToken(): respose {}", element.toString());
-                    return element;
+                    try (Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8")) {
+                        JsonElement element = JsonParser.parseReader(reader);
+                        reader.close();
+                        logger.debug("queryRefreshToken(): respose {}", element.toString());
+                        return element;
+                    } catch (IOException e) {
+                        throw new IOException("query(): create InputStreamReader() failed");
+                    }
             }
         } catch (URISyntaxException e) {
             throw new MalformedURLException("invalid url");
