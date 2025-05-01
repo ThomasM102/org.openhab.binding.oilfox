@@ -114,21 +114,21 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     @Override
     public void initialize() {
         config = getConfigAs(OilFoxBridgeConfiguration.class); // reload config, maybe settings changed
-        logger.debug("initialize(): address:  {}", config.address);
+        // logger.debug("initialize(): address: {}", config.address);
         // logger.debug("initialize(): email: {}", config.email);
         // logger.debug("initialize(): password: {}", config.password);
-        logger.debug("initialize(): refresh:  {}", config.refresh);
+        // logger.debug("initialize(): refresh: {}", config.refresh);
         synchronized (this) {
             // cancel old job
             ScheduledFuture<?> localRefreshJob = this.refreshJob; // prevent race condition
             if (localRefreshJob != null) {
                 localRefreshJob.cancel(false);
             }
-            // updateStatus(ThingStatus.ONLINE); // bridge will get online after successfully login to OilFox API
-
             refreshJob = scheduler.scheduleWithFixedDelay(() -> {
                 readStatus();
             }, 0, config.refresh.longValue(), TimeUnit.HOURS);
+
+            updateStatus(ThingStatus.ONLINE);
         }
     }
 
