@@ -54,7 +54,6 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
     @Override
     public void initialize() {
-
         @Nullable
         Bridge bridge = this.getBridge(); // prevent race condition
         @Nullable
