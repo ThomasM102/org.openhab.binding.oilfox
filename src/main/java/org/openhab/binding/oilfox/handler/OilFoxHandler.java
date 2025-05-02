@@ -84,6 +84,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                     ((OilFoxBridgeHandler) handler).registerOilFoxStatusListener(this);
                     updateStatus(ThingStatus.ONLINE);
                 } else {
+                    ;
                 }
             } else {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
