@@ -108,7 +108,7 @@ public class OilFoxDiscoveryService extends AbstractDiscoveryService implements 
         properties.put(OilFoxBindingConstants.PROPERTY_HWID, hwid);
 
         DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID).withLabel(label).withBridge(bridge)
-                .withProperties(properties).build();
+                .withProperties(properties).withRepresentationProperty(hwid).build();
         thingDiscovered(discoveryResult);
     }
 
