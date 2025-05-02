@@ -91,12 +91,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         oilFoxStatusListener.onOilFoxRefresh(devices);
                     }
                 }
-            } catch (MalformedURLException e) {
-                logger.error("Exception occurred during execution: {}", e.getMessage(), e);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
             } catch (IOException e) {
-                logger.error("Exception occurred during execution: {}", e.getMessage(), e);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
             }
         }
     }
@@ -277,7 +273,6 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
                 updateStatus(ThingStatus.ONLINE);
             } catch (IOException e) {
-                logger.error("login(): exception occurred during refresh token: {}", e.getMessage(), e);
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             }
         }
