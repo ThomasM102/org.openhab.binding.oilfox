@@ -67,7 +67,6 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             final OilFoxDeviceConfiguration config = getConfigAs(OilFoxDeviceConfiguration.class);
             hwid = config.hwid;
             if ((hwid == null) || hwid.isEmpty()) {
-                logger.error("initialize(): {}: hwid not set", this.getThing().getUID());
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "hwid missing");
                 return;
             } else {
