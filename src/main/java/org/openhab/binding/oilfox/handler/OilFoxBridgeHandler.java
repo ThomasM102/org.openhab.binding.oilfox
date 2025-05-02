@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.oilfox.handler;
 
+import static java.time.temporal.ChronoUnit.MINUTES;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
@@ -62,8 +65,9 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     private OilFoxBridgeConfiguration config = getConfigAs(OilFoxBridgeConfiguration.class);
     private @Nullable ScheduledFuture<?> refreshJob;
     private List<OilFoxStatusListener> oilFoxStatusListeners = new CopyOnWriteArrayList<>();
-    private @Nullable String access_token = null;
-    private @Nullable String refresh_token = null;
+    private @Nullable String accessToken = null;
+    private LocalDateTime accessTokenTime = LocalDateTime.now();
+    private @Nullable String refreshToken = null;
 
     public OilFoxBridgeHandler(Bridge bridge) {
         super(bridge);
@@ -147,8 +151,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 if (getThing().getStatus() != ThingStatus.ONLINE) {
                     throw new IOException("Not logged in");
                 }
-                logger.debug("query(): access_token: {}", access_token);
-                request.setRequestProperty("Authorization", "Bearer " + access_token);
+                logger.debug("query(): access token: {}", accessToken);
+                request.setRequestProperty("Authorization", "Bearer " + accessToken);
             } else { // used by login()
                 request.setRequestMethod("POST");
                 request.setDoOutput(true);
@@ -209,15 +213,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             request.connect();
 
             switch (request.getResponseCode()) {
-                case 400:
-                    logger.error("queryRefreshToken(): login to FoxInsights API failed");
-                    throw new IOException("login to FoxInsights API failed");
-                case 401:
-                    logger.error("queryRereshToken(): request is unauthorized");
-                    throw new IOException("FoxInsights API Unauthorized");
                 case 200:
                     // authorized
-                default:
                     try (Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8")) {
                         JsonElement element = JsonParser.parseReader(reader);
                         reader.close();
@@ -226,6 +223,12 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     } catch (IOException e) {
                         throw new IOException("query(): create InputStreamReader() failed");
                     }
+                default:
+                    logger.error("queryRefreshToken(): login to FoxInsights API failed, response code {}",
+                            request.getResponseCode());
+                    accessToken = null;
+                    refreshToken = null;
+                    throw new IOException("login to FoxInsights API failed");
             }
         } catch (URISyntaxException e) {
             throw new MalformedURLException("invalid url");
@@ -233,7 +236,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     private void login() {
-        if (access_token == null) { // login with user and password
+        if (accessToken == null) { // login with user and password
             logger.debug("login(): no access token, login to FoxInsights API with user and password");
             try {
                 JsonObject requestObject = new JsonObject();
@@ -245,10 +248,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
                 if (responseObject.isJsonObject()) {
                     JsonObject object = responseObject.getAsJsonObject();
-                    access_token = object.get("access_token").getAsString();
-                    refresh_token = object.get("refresh_token").getAsString();
-                    logger.debug("login(): access_token: {}", access_token);
-                    logger.debug("login(): refresh_token: {}", refresh_token);
+                    accessToken = object.get("access_token").getAsString();
+                    accessTokenTime = LocalDateTime.now();
+                    refreshToken = object.get("refresh_token").getAsString();
+                    logger.debug("login(): access token: {}", accessToken);
+                    logger.debug("login(): refresh token: {}", refreshToken);
                 }
                 updateStatus(ThingStatus.ONLINE);
             } catch (IOException e) {
@@ -256,19 +260,25 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             }
         } else { // refresh access token
+            long minutes = MINUTES.between(accessTokenTime, LocalDateTime.now());
+            if (minutes < 15) {
+                logger.debug("login(): access token age {} minutes, no need to refresh", minutes);
+                return;
+            }
             logger.debug("login(): refresh access token on FoxInsights API");
             try {
-                String payload = "refresh_token=" + refresh_token;
+                String payload = "refreshToken=" + refreshToken;
                 // StringEntity entity = new StringEntity(payload, ContentType.APPLICATION_FORM_URLENCODED);
                 JsonElement responseObject = queryRefreshToken("/customer-api/v1/token", payload);
                 logger.trace("login(): responseObject: {}", responseObject.toString());
 
                 if (responseObject.isJsonObject()) {
                     JsonObject object = responseObject.getAsJsonObject();
-                    access_token = object.get("access_token").getAsString();
-                    refresh_token = object.get("refresh_token").getAsString();
-                    logger.debug("login(): access_token: {}", access_token);
-                    logger.debug("login(): refresh_token: {}", refresh_token);
+                    accessToken = object.get("access_token").getAsString();
+                    accessTokenTime = LocalDateTime.now();
+                    refreshToken = object.get("refresh_token").getAsString();
+                    logger.debug("login(): access token: {}", accessToken);
+                    logger.debug("login(): refresh token: {}", refreshToken);
                 }
 
                 updateStatus(ThingStatus.ONLINE);
@@ -293,12 +303,12 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 boolean found = false;
                 for (OilFoxStatusListener oilFoxStatusListener : oilFoxStatusListeners) {
                     @Nullable
-                    String existing_HWID = oilFoxStatusListener.getHWID();
-                    if (existing_HWID == null) {
+                    String existingHWID = oilFoxStatusListener.getHWID();
+                    if (existingHWID == null) {
                         continue;
                     }
-                    logger.debug("getAllDevices(): existing device HWID {}", existing_HWID);
-                    if (hwid.equals(existing_HWID)) {
+                    logger.debug("getAllDevices(): existing device HWID {}", existingHWID);
+                    if (hwid.equals(existingHWID)) {
                         logger.debug("getAllDevices(): device with hwid {} exists", hwid);
                         found = true;
                     }
