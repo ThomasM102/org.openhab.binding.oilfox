@@ -191,6 +191,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         }
     }
 
+    @Nullable
     protected JsonElement queryRefreshToken(String path, String payload) throws MalformedURLException, IOException {
         try {
             URL url = new URI("https://" + config.address + path).toURL();
@@ -224,11 +225,12 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         throw new IOException("query(): create InputStreamReader() failed");
                     }
                 default:
-                    logger.error("queryRefreshToken(): login to FoxInsights API failed, response code {}",
+                    // refresh token can be invalid after login from another system
+                    logger.debug("queryRefreshToken(): refresh access token failed, response code {}",
                             request.getResponseCode());
                     accessToken = null;
                     refreshToken = null;
-                    throw new IOException("login to FoxInsights API failed");
+                    return null;
             }
         } catch (URISyntaxException e) {
             throw new MalformedURLException("invalid url");
@@ -236,6 +238,37 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     private void login() {
+        if (refreshToken != null) { // we have a refresh access token, use this
+            long minutes = MINUTES.between(accessTokenTime, LocalDateTime.now());
+            if (minutes < 15) {
+                logger.debug("login(): access token age {} minutes, no need to refresh", minutes);
+                return;
+            }
+            logger.debug("login(): refresh access token on FoxInsights API");
+            try {
+                String payload = "refreshToken=" + refreshToken;
+                // StringEntity entity = new StringEntity(payload, ContentType.APPLICATION_FORM_URLENCODED);
+                JsonElement responseObject = queryRefreshToken("/customer-api/v1/token", payload);
+                if (responseObject != null) {
+                    logger.trace("login(): responseObject: {}", responseObject.toString());
+
+                    if (responseObject.isJsonObject()) {
+                        JsonObject object = responseObject.getAsJsonObject();
+                        accessToken = object.get("access_token").getAsString();
+                        accessTokenTime = LocalDateTime.now();
+                        refreshToken = object.get("refresh_token").getAsString();
+                        logger.debug("login(): access token: {}", accessToken);
+                        logger.debug("login(): refresh token: {}", refreshToken);
+                        updateStatus(ThingStatus.ONLINE);
+                        return; // refresh access token was succesful
+                    }
+                }
+
+            } catch (IOException e) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            }
+        }
+
         if (accessToken == null) { // login with user and password
             logger.debug("login(): no access token, login to FoxInsights API with user and password");
             try {
@@ -257,32 +290,6 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 updateStatus(ThingStatus.ONLINE);
             } catch (IOException e) {
                 logger.error("login(): exception occurred during login with user and password: {}", e.getMessage(), e);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-            }
-        } else { // refresh access token
-            long minutes = MINUTES.between(accessTokenTime, LocalDateTime.now());
-            if (minutes < 15) {
-                logger.debug("login(): access token age {} minutes, no need to refresh", minutes);
-                return;
-            }
-            logger.debug("login(): refresh access token on FoxInsights API");
-            try {
-                String payload = "refreshToken=" + refreshToken;
-                // StringEntity entity = new StringEntity(payload, ContentType.APPLICATION_FORM_URLENCODED);
-                JsonElement responseObject = queryRefreshToken("/customer-api/v1/token", payload);
-                logger.trace("login(): responseObject: {}", responseObject.toString());
-
-                if (responseObject.isJsonObject()) {
-                    JsonObject object = responseObject.getAsJsonObject();
-                    accessToken = object.get("access_token").getAsString();
-                    accessTokenTime = LocalDateTime.now();
-                    refreshToken = object.get("refresh_token").getAsString();
-                    logger.debug("login(): access token: {}", accessToken);
-                    logger.debug("login(): refresh token: {}", refreshToken);
-                }
-
-                updateStatus(ThingStatus.ONLINE);
-            } catch (IOException e) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             }
         }
