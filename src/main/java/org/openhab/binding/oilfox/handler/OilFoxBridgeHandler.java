@@ -117,7 +117,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void initialize() {
-        config = getConfigAs(OilFoxBridgeConfiguration.class); // reload config, maybe settings changed
+        logger.debug("initialize():");
+        // reset config, maybe settings changed
+        config = getConfigAs(OilFoxBridgeConfiguration.class);
+        accessToken = null;
+        refreshToken = null;
         // logger.debug("initialize(): address: {}", config.address);
         // logger.debug("initialize(): email: {}", config.email);
         // logger.debug("initialize(): password: {}", config.password);
@@ -173,10 +177,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
             switch (request.getResponseCode()) {
                 case 400:
-                    logger.error("query(): login to FoxInsights API failed");
                     throw new IOException("login to FoxInsights API failed");
                 case 401:
-                    logger.error("query(): request is unauthorized");
                     throw new IOException("FoxInsights API Unauthorized");
                 case 200:
                     // authorized
