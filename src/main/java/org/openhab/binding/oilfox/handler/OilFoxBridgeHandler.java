@@ -17,6 +17,7 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -95,6 +96,9 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         oilFoxStatusListener.onOilFoxRefresh(devices);
                     }
                 }
+            } catch (InterruptedIOException e) {
+                logger.debug("readStatus(): request interrupted {}", e.getMessage());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
             } catch (IOException e) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
             }
@@ -182,6 +186,9 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         reader.close();
                         logger.debug("query(): respose {}", element.toString());
                         return element;
+                    } catch (InterruptedIOException e) {
+                        logger.debug("query(): request interrupted {}", e.getMessage());
+                        throw new IOException("query(): create InputStreamReader() failed");
                     } catch (IOException e) {
                         throw new IOException("query(): create InputStreamReader() failed");
                     }
@@ -221,8 +228,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         reader.close();
                         logger.debug("queryRefreshToken(): respose {}", element.toString());
                         return element;
-                    } catch (IOException e) {
+                    } catch (InterruptedIOException e) {
+                        logger.debug("queryRefreshToken(): request interrupted {}", e.getMessage());
                         throw new IOException("query(): create InputStreamReader() failed");
+                    } catch (IOException e) {
+                        throw new IOException("queryRefreshToken(): create InputStreamReader() failed");
                     }
                 default:
                     // refresh token can be invalid after login from another system
@@ -263,6 +273,9 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         return; // refresh access token was succesful
                     }
                 }
+            } catch (InterruptedIOException e) {
+                logger.debug("login(): request interrupted {}", e.getMessage());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
 
             } catch (IOException e) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
@@ -288,6 +301,10 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     logger.debug("login(): refresh token: {}", refreshToken);
                 }
                 updateStatus(ThingStatus.ONLINE);
+            } catch (InterruptedIOException e) {
+                logger.debug("login(): request interrupted {}", e.getMessage());
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+
             } catch (IOException e) {
                 logger.error("login(): exception occurred during login with user and password: {}", e.getMessage(), e);
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());

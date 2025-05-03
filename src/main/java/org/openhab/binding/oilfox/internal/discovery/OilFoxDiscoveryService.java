@@ -13,6 +13,7 @@
 package org.openhab.binding.oilfox.internal.discovery;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -71,6 +72,9 @@ public class OilFoxDiscoveryService extends AbstractDiscoveryService implements 
             oilFoxBridgeHandler.getAllDevices();
         } catch (MalformedURLException e) {
             logger.error("Exception occurred during execution: {}", e.getMessage(), e);
+        } catch (InterruptedIOException e) {
+            logger.error("Exception occurred during execution: {}", e.getMessage(), e);
+
         } catch (IOException e) {
             logger.error("Exception occurred during execution: {}", e.getMessage(), e);
         }
