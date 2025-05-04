@@ -1,0 +1,83 @@
+name: Build OilFox Binding for openHAB 5.0.x
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ '21' ]
+        maven: [ '3.9.9' ]
+        addons-ref: [ '5.0.x' ]
+        addons-branch: [ 'main' ]
+        os: [ 'ubuntu-24.04' ]
+    name: Build on ${{ matrix.addons-ref }} (Java ${{ matrix.java }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout openhab-addons
+        uses: actions/checkout@v4
+        with:
+          repository: openhab/openhab-addons
+          path: openhab-addons
+          ref: ${{ matrix.addons-branch }}
+
+      - name: Checkout oilFox Binding
+        uses: actions/checkout@v4
+        with:
+          path: openhab-addons/bundles/org.openhab.binding.oilfox
+
+      - name: Set up Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/org/openhab
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Set up Java ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+
+      - name: Set up Maven ${{ matrix.maven }}
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: ${{ matrix.maven }}
+
+      - name: Build with maven
+        run: 'cd openhab-addons/bundles/org.openhab.binding.oilfox ; mvn clean install -DskipChecks'
+
+      - name: set env
+        run: echo "TAG=openHAB_${{ matrix.addons-ref }}_$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Build Release History
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{ env.TAG }}"
+          prerelease: false
+          title: "${{ env.TAG }}"
+          files: |
+            openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
+
+      - name: Build latest Release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest_openHAB_${{ matrix.addons-ref }}"
+          prerelease: false
+          title: "Latest Build for openHAB ${{ matrix.addons-ref }}"
+          files: |
+            openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
