@@ -13,7 +13,8 @@ jobs:
       matrix:
         java: [ '17' ]
         maven: [ '3.9.4' ]
-        addons-ref: [ '4.3.x' ]
+        addons-ref: [ '4' ]
+        addons-branch: [ '4.3.x' ]
         os: [ 'ubuntu-24.04' ]
         include:
           - java: 17
@@ -29,7 +30,7 @@ jobs:
         with:
           repository: openhab/openhab-addons
           path: openhab-addons
-          ref: ${{ matrix.addons-ref }}
+          ref: ${{ matrix.addons-branch }}
 
       - name: Checkout oilFox Binding
         uses: actions/checkout@v4
@@ -72,6 +73,11 @@ jobs:
           title: "${{ env.TAG }}"
           files: |
             openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
+
+      - name: rename jar files
+        run: |
+          mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4*-SNAPSHOT.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4.jar
+          mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4*-SNAPSHOT-sources.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4-sources.jar
 
       - name: Build latest Release
         uses: "marvinpinto/action-automatic-releases@latest"
