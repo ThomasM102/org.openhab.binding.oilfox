@@ -24,12 +24,12 @@ An account must be specified in the OilFox bridge configuration, all OilFox devi
 
 There are several settings for an account:
 
-| Name     | Required |    Default    | Description                            |
-|----------|----------|---------------|----------------------------------------|
-| address  |   yes    | api.oilfox.io | OilFox Cloud server address            |
-| email    |   yes    |               | Email registerd on the OilFox Cloud    |
-| password |   yes    |               | Password registerd on the OilFox Cloud |
-| refresh  |   yes    |             6 | refresh interval in hours              |
+| Name     | Required |    Default    | Description                             |
+|----------|----------|---------------|-----------------------------------------|
+| address  |   yes    | api.oilfox.io | OilFox Cloud server address             |
+| email    |   yes    |               | Email registered on the OilFox Cloud    |
+| password |   yes    |               | Password registered on the OilFox Cloud |
+| refresh  |   yes    |             6 | refresh interval in hours               |
 
 
 ## Thing Configuration
