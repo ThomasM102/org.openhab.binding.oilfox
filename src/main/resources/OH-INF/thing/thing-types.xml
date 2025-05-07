@@ -11,6 +11,7 @@
 
 		<label>OilFox Device</label>
 		<description>OilFox Device</description>
+		<category>Sensor</category>
 
 		<channels>
 			<channel id="currentMeteringAt" typeId="currentMeteringAt"/>
