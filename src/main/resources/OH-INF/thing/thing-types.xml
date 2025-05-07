@@ -12,6 +12,7 @@
 		<label>OilFox Device</label>
 		<description>OilFox Device</description>
 		<category>Sensor</category>
+		<semantic-equipment-tag>Sensor</semantic-equipment-tag>
 
 		<channels>
 			<channel id="currentMeteringAt" typeId="currentMeteringAt"/>
