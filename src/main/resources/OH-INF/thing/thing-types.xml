@@ -30,43 +30,48 @@
 		<item-type>DateTime</item-type>
 		<label>Current Metering</label>
 		<description>current metering at</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="nextMeteringAt">
 		<item-type>DateTime</item-type>
 		<label>Next Metering</label>
 		<description>next metering at</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="daysReach">
 		<item-type>Number</item-type>
 		<label>Days Reach</label>
 		<description>days reach</description>
-		<state min="0" pattern="%.0f days"></state>
+		<state readOnly="true" min="0" pattern="%.0f days"></state>
 	</channel-type>
 
 	<channel-type id="batteryLevel">
 		<item-type>String</item-type>
 		<label>Battery Level</label>
 		<description>battery level</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="fillLevelPercent">
 		<item-type unitHint="%">Number:Dimensionless</item-type>
 		<label>Fill Level Percentage</label>
 		<description>fill level in percentage, 0 to 100</description>
-		<state min="0" max="100" pattern="%.0f %%"></state>
+		<state readOnly="true" min="0" max="100" pattern="%.0f %%"></state>
 	</channel-type>
 
 	<channel-type id="fillLevelQuantity">
 		<item-type>Number</item-type>
 		<label>Fill Level Quantity</label>
 		<description>fill level quantity</description>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="quantityUnit">
 		<item-type>String</item-type>
 		<label>Quantity Unit</label>
 		<description>quantity unit</description>
+		<state readOnly="true"/>
 	</channel-type>
 </thing:thing-descriptions>
