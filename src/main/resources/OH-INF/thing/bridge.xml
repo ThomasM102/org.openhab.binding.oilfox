@@ -8,6 +8,7 @@
 	<bridge-type id="bridge">
 		<label>OilFox Bridge</label>
 		<description>OilFox Bridge connect to official customer API (https://github.com/foxinsights/customer-api)</description>
+		<semantic-equipment-tag>NetworkAppliance</semantic-equipment-tag>
 
 		<config-description>
 			<parameter name="address" type="text">
