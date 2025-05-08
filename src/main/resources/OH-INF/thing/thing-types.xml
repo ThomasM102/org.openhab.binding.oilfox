@@ -32,6 +32,7 @@
 		<item-type>DateTime</item-type>
 		<label>Current Metering</label>
 		<description>current metering at</description>
+		<category>time</category>
 		<tags>
 			<tag>Timestamp</tag>
 		</tags>
@@ -43,6 +44,7 @@
 		<item-type>DateTime</item-type>
 		<label>Next Metering</label>
 		<description>next metering at</description>
+		<category>time</category>
 		<tags>
 			<tag>Timestamp</tag>
 		</tags>
@@ -54,6 +56,7 @@
 		<item-type>Number</item-type>
 		<label>Days Reach</label>
 		<description>days reach</description>
+		<category>time</category>
 		<tags>
 			<tag>Duration</tag>
 		</tags>
@@ -65,6 +68,7 @@
 		<item-type>String</item-type>
 		<label>Battery Level</label>
 		<description>battery level</description>
+		<category>Battery</category>
 		<tags>
 			<tag>Status</tag>
 		</tags>
@@ -83,6 +87,7 @@
 		<item-type unitHint="%">Number:Dimensionless</item-type>
 		<label>Fill Level Percentage</label>
 		<description>fill level in percentage, 0 to 100</description>
+		<category>oh:sewerage</category>
 		<tags>
 			<tag>Measurement</tag>
 			<tag>Level</tag>
@@ -94,6 +99,7 @@
 		<item-type>Number</item-type>
 		<label>Fill Level Quantity</label>
 		<description>fill level quantity</description>
+		<category>oh:oil</category>
 		<tags>
 			<tag>Measurement</tag>
 			<tag>Level</tag>
