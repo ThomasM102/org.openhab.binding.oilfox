@@ -32,6 +32,10 @@
 		<item-type>DateTime</item-type>
 		<label>Current Metering</label>
 		<description>current metering at</description>
+		<tags>
+			<tag>Timestamp</tag>
+		</tags>
+
 		<state readOnly="true"/>
 	</channel-type>
 
@@ -39,6 +43,10 @@
 		<item-type>DateTime</item-type>
 		<label>Next Metering</label>
 		<description>next metering at</description>
+		<tags>
+			<tag>Timestamp</tag>
+		</tags>
+
 		<state readOnly="true"/>
 	</channel-type>
 
@@ -46,6 +54,10 @@
 		<item-type>Number</item-type>
 		<label>Days Reach</label>
 		<description>days reach</description>
+		<tags>
+			<tag>Duration</tag>
+		</tags>
+
 		<state readOnly="true" min="0" pattern="%.0f days"></state>
 	</channel-type>
 
@@ -53,6 +65,9 @@
 		<item-type>String</item-type>
 		<label>Battery Level</label>
 		<description>battery level</description>
+		<tags>
+			<tag>Status</tag>
+		</tags>
 		<state readOnly="true">
 			<options>
 				<option value="FULL">Full battery level</option>
@@ -68,6 +83,10 @@
 		<item-type unitHint="%">Number:Dimensionless</item-type>
 		<label>Fill Level Percentage</label>
 		<description>fill level in percentage, 0 to 100</description>
+		<tags>
+			<tag>Measurement</tag>
+			<tag>Level</tag>
+		</tags>
 		<state readOnly="true" min="0" max="100" pattern="%.0f %%"></state>
 	</channel-type>
 
@@ -75,6 +94,10 @@
 		<item-type>Number</item-type>
 		<label>Fill Level Quantity</label>
 		<description>fill level quantity</description>
+		<tags>
+			<tag>Measurement</tag>
+			<tag>Level</tag>
+		</tags>
 		<state readOnly="true"/>
 	</channel-type>
 
