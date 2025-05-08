@@ -140,8 +140,13 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         }
     }
 
-    // communication with OilFox Cloud
+    @Override
+    public void dispose() {
+        logger.debug("dispose(): bridge");
+        super.dispose();
+    }
 
+    // communication with OilFox Cloud
     protected JsonElement query(String address) throws MalformedURLException, IOException {
         return query(address, JsonNull.INSTANCE);
     }
@@ -256,7 +261,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 logger.debug("login(): access token age {} minutes, no need to refresh", minutes);
                 return;
             }
-            logger.debug("login(): refresh access token on FoxInsights API");
+            logger.debug("login(): access token age {} minutes, need to refresh", minutes);
             try {
                 String payload = "refreshToken=" + refreshToken;
                 // StringEntity entity = new StringEntity(payload, ContentType.APPLICATION_FORM_URLENCODED);
@@ -276,15 +281,21 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     }
                 }
             } catch (InterruptedIOException e) {
-                logger.debug("login(): request interrupted {}", e.getMessage());
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                logger.debug("login(): refresh token exception InterruptedIOException {}", e.getMessage()); // do not
+                                                                                                            // set thing
+                                                                                                            // OFFLINE,
+                                                                                                            // retry
+                                                                                                            // with
+                                                                                                            // user/password
 
             } catch (IOException e) {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                logger.debug("login(): refresh token exception IOException {}", e.getMessage()); // do not set thing
+                                                                                                 // OFFLINE, retry with
+                                                                                                 // user/password
             }
         }
 
-        if (accessToken == null) { // login with user and password
+        if (accessToken == null) { // login with user/password
             logger.debug("login(): no access token, login to FoxInsights API with user and password");
             try {
                 JsonObject requestObject = new JsonObject();
@@ -304,11 +315,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 }
                 updateStatus(ThingStatus.ONLINE);
             } catch (InterruptedIOException e) {
-                logger.debug("login(): request interrupted {}", e.getMessage());
+                logger.debug("login(): user/password exception InterruptedIOException {}", e.getMessage());
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
 
             } catch (IOException e) {
-                logger.error("login(): exception occurred during login with user and password: {}", e.getMessage(), e);
+                logger.error("login(): user/password exception IOException {}", e.getMessage(), e);
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             }
         }

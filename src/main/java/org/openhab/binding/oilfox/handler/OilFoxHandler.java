@@ -94,6 +94,12 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
     }
 
     @Override
+    public void dispose() {
+        logger.debug("dispose(): hwid {}", this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID));
+        super.dispose();
+    }
+
+    @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("handleCommand(): channelUID: {}, command: {}", channelUID, command);
         if (command == RefreshType.REFRESH) {
