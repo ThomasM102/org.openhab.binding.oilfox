@@ -52,7 +52,15 @@
 		<item-type>String</item-type>
 		<label>Battery Level</label>
 		<description>battery level</description>
-		<state readOnly="true"/>
+		<state readOnly="true">
+			<options>
+				<option value="FULL">Full battery level</option>
+				<option value="GOOD">Good battery level</option>
+				<option value="MEDIUM">Medium battery level</option>
+				<option value="WARNING">Low battery level</option>
+				<option value="CRITICAL">Critical battery level</option>
+			</options>
+		</state>
 	</channel-type>
 
 	<channel-type id="fillLevelPercent">
