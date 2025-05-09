@@ -74,8 +74,8 @@ jobs:
 
       - name: rename jar files
         run: | 
-          mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5*-SNAPSHOT.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5.jar
-          mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5*-SNAPSHOT-sources.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5-sources.jar
+          mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5*-SNAPSHOT.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5.0.0.jar
+          mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5*-SNAPSHOT-sources.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5.0.0-sources.jar
 
       - name: Build latest Release
         uses: "marvinpinto/action-automatic-releases@latest"
