@@ -107,7 +107,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        logger.debug("handleCommand(): channelUID {}, command {}", channelUID, command);
+        logger.debug("handleCommand(): channelUID: {}, command: {}", channelUID, command);
         if (command == RefreshType.REFRESH) {
             readStatus();
             return;
@@ -206,11 +206,14 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     @Nullable
-    protected JsonElement queryRefreshToken(String path, String payload) throws MalformedURLException, IOException {
+    protected JsonElement queryRefreshToken() throws MalformedURLException, IOException {
         try {
-            URL url = new URI("https://" + config.address + path).toURL();
-            logger.debug("queryRefreshToken(): url {}", url.toString());
-            logger.debug("queryRefreshToken(): payload {}", payload);
+            URL url = new URI("https://" + config.address + "/customer-api/v1/token").toURL();
+            logger.debug("queryRefreshToken(): url: {}", url.toString());
+
+            String payload = "refresh_token=" + refreshToken;
+            logger.debug("queryRefreshToken(): payload: {}", payload);
+
             HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
             request.setReadTimeout(10000);
             request.setConnectTimeout(15000);
@@ -263,9 +266,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             }
             logger.debug("login(): access token age {} minutes, need to refresh", minutes);
             try {
-                String payload = "refreshToken=" + refreshToken;
-                // StringEntity entity = new StringEntity(payload, ContentType.APPLICATION_FORM_URLENCODED);
-                JsonElement responseObject = queryRefreshToken("/customer-api/v1/token", payload);
+                JsonElement responseObject = queryRefreshToken();
                 if (responseObject != null) {
                     logger.trace("login(): responseObject: {}", responseObject.toString());
 
