@@ -180,9 +180,16 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             logger.debug("onOilFoxRefresh(): nextMeteringAt {}", nextMeteringAt);
             this.updateState(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT, new DateTimeType(nextMeteringAt));
 
-            BigInteger daysReach = object.get(OilFoxBindingConstants.CHANNEL_DAYS_REACH).getAsBigInteger();
-            logger.debug("onOilFoxRefresh(): daysReach {}", daysReach);
-            this.updateState(OilFoxBindingConstants.CHANNEL_DAYS_REACH, DecimalType.valueOf(daysReach.toString()));
+            // first days this information is missing with a new OilFox device
+            @Nullable
+            JsonElement daysReachElement = object.get(OilFoxBindingConstants.CHANNEL_DAYS_REACH);
+            if (daysReachElement != null) {
+                BigInteger daysReach = daysReachElement.getAsBigInteger();
+                logger.debug("onOilFoxRefresh(): daysReach {}", daysReach);
+                this.updateState(OilFoxBindingConstants.CHANNEL_DAYS_REACH, DecimalType.valueOf(daysReach.toString()));
+            } else {
+                logger.debug("onOilFoxRefresh(): daysReach missing from API");
+            }
 
             String batteryLevel = object.get(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL).getAsString();
             logger.debug("onOilFoxRefresh(): batteryLevel {}", batteryLevel);
