@@ -68,6 +68,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     private List<OilFoxStatusListener> oilFoxStatusListeners = new CopyOnWriteArrayList<>();
     private @Nullable String accessToken = null;
     private LocalDateTime accessTokenTime = LocalDateTime.now();
+    private LocalDateTime lastDeviceRefresh = LocalDateTime.now();
     private @Nullable String refreshToken = null;
 
     public OilFoxBridgeHandler(Bridge bridge) {
@@ -106,9 +107,22 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     @Override
-    public void handleCommand(ChannelUID channelUID, Command command) {
-        logger.debug("handleCommand(): channelUID: {}, command: {}", channelUID, command);
+    public void handleCommand(@Nullable ChannelUID channelUID, Command command) {
+        if (channelUID != null) { // if channelUID not set, apply command to all channels
+            logger.debug("handleCommand(): channelUID: {}", channelUID);
+        }
+        logger.debug("handleCommand(): command: {}", command);
         if (command == RefreshType.REFRESH) {
+            // prevent to overload API fair use from additional refresh at metering time
+            if (channelUID == null) { // called by additional refresh
+                long minutes = MINUTES.between(lastDeviceRefresh, LocalDateTime.now());
+                logger.debug("handleCommand(): last additional device refresh {} minutes ago", minutes);
+                if (minutes < 60) {
+                    logger.debug("handleCommand(): too fast refresh, defer request");
+                    return;
+                }
+                lastDeviceRefresh = LocalDateTime.now();
+            }
             readStatus();
             return;
         }
