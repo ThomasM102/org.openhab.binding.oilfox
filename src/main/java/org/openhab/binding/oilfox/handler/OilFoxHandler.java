@@ -12,7 +12,15 @@
  */
 package org.openhab.binding.oilfox.handler;
 
+import static java.time.temporal.ChronoUnit.MINUTES;
+
 import java.math.BigInteger;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -47,6 +55,7 @@ import com.google.gson.JsonObject;
 public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListener {
 
     private final Logger logger = LoggerFactory.getLogger(OilFoxHandler.class);
+    private @Nullable ScheduledFuture<?> deviceRefreshJob;
 
     public OilFoxHandler(Thing thing) {
         super(thing);
@@ -100,8 +109,11 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
     }
 
     @Override
-    public void handleCommand(ChannelUID channelUID, Command command) {
-        logger.debug("handleCommand(): channelUID: {}, command: {}", channelUID, command);
+    public void handleCommand(@Nullable ChannelUID channelUID, Command command) {
+        if (channelUID != null) { // if channelUID not set, apply command to all channels
+            logger.debug("handleCommand(): channelUID: {}", channelUID);
+        }
+        logger.debug("handleCommand(): command: {}", command);
         if (command == RefreshType.REFRESH) {
             @Nullable
             Bridge bridge = this.getBridge(); // prevent race condition
@@ -173,11 +185,11 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             }
 
             String currentMeteringAt = object.get(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT).getAsString();
-            logger.debug("onOilFoxRefresh(): currentMeteringAt {}", currentMeteringAt);
+            logger.debug("onOilFoxRefresh(): hwid {}: currentMeteringAt {}", deviceHWID, currentMeteringAt);
             this.updateState(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT, new DateTimeType(currentMeteringAt));
 
             String nextMeteringAt = object.get(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT).getAsString();
-            logger.debug("onOilFoxRefresh(): nextMeteringAt {}", nextMeteringAt);
+            logger.debug("onOilFoxRefresh(): hwid {}: nextMeteringAt {}", deviceHWID, nextMeteringAt);
             this.updateState(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT, new DateTimeType(nextMeteringAt));
 
             // first days this information is missing with a new OilFox device
@@ -185,33 +197,52 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             JsonElement daysReachElement = object.get(OilFoxBindingConstants.CHANNEL_DAYS_REACH);
             if (daysReachElement != null) {
                 BigInteger daysReach = daysReachElement.getAsBigInteger();
-                logger.debug("onOilFoxRefresh(): daysReach {}", daysReach);
+                logger.debug("onOilFoxRefresh(): hwid {}: daysReach {}", deviceHWID, daysReach);
                 this.updateState(OilFoxBindingConstants.CHANNEL_DAYS_REACH, DecimalType.valueOf(daysReach.toString()));
             } else {
-                logger.debug("onOilFoxRefresh(): daysReach missing from API");
+                logger.debug("onOilFoxRefresh(): hwid {}: daysReach missing from API", deviceHWID);
             }
 
             String batteryLevel = object.get(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL).getAsString();
-            logger.debug("onOilFoxRefresh(): batteryLevel {}", batteryLevel);
+            logger.debug("onOilFoxRefresh(): hwid {}: batteryLevel {}", deviceHWID, batteryLevel);
             this.updateState(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL, new StringType(batteryLevel));
 
             BigInteger fillLevelPercent = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT)
                     .getAsBigInteger();
-            logger.debug("onOilFoxRefresh(): fillLevelPercent {}", fillLevelPercent);
+            logger.debug("onOilFoxRefresh(): hwid {}: fillLevelPercent {}", deviceHWID, fillLevelPercent);
             this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT,
                     DecimalType.valueOf(fillLevelPercent.toString()));
 
             BigInteger fillLevelQuantity = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY)
                     .getAsBigInteger();
-            logger.debug("onOilFoxRefresh(): fillLevelQuantity {}", fillLevelQuantity);
+            logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {}", deviceHWID, fillLevelQuantity);
             this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
                     DecimalType.valueOf(fillLevelQuantity.toString()));
 
             String quantityUnit = object.get(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT).getAsString();
-            logger.debug("onOilFoxRefresh(): quantityUnit {}", quantityUnit);
+            logger.debug("onOilFoxRefresh(): hwid {}: quantityUnit {}", deviceHWID, quantityUnit);
             this.updateState(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT, new StringType(quantityUnit));
 
             updateStatus(ThingStatus.ONLINE);
+
+            // schedule additional refresh to time short after next metering
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                    .withZone(ZoneId.of("UTC"));
+            ZonedDateTime dateTimeWithZoneOffset = ZonedDateTime.parse(nextMeteringAt, formatter);
+            LocalDateTime dateTime = LocalDateTime.ofInstant(dateTimeWithZoneOffset.toInstant(),
+                    ZoneId.systemDefault());
+            long minutes = MINUTES.between(LocalDateTime.now(), dateTime) + 5; // add 5 minutes to be save to get new
+            // cancel old job
+            ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
+            if (localDeviceRefreshJob != null) {
+                logger.debug("onOilFoxRefresh(): hwid {}: cancel additional refresh schedule", deviceHWID);
+                localDeviceRefreshJob.cancel(false);
+            }
+            logger.debug("onOilFoxRefresh(): hwid {}: add additional refresh schedule in {} minutes", deviceHWID,
+                    minutes);
+            deviceRefreshJob = scheduler.schedule(() -> {
+                handleCommand(null, RefreshType.REFRESH);
+            }, minutes, TimeUnit.MINUTES);
             return;
         }
 
