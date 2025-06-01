@@ -18,7 +18,7 @@ jobs:
         os: [ 'ubuntu-24.04' ]
         include:
           - java: 17
-    name: Build on ${{ matrix.addons-ref }} (Java ${{ matrix.java }}, ${{ matrix.os }})
+    name: Build on ${{ matrix.addons-branch }} (Java ${{ matrix.java }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -62,13 +62,15 @@ jobs:
         run: 'cd openhab-addons/bundles/org.openhab.binding.oilfox ; mvn clean install -DskipChecks'
 
       - name: set env
-        run: echo "TAG=openHAB_${{ matrix.addons-ref }}_$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        run: |
+          echo "RELEASE_TAG=openHAB_${{ matrix.addons-branch }}_$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "STABLE_TAG=$(echo ${{ matrix.addons-branch }} | cut -d'.' -f1)" >> $GITHUB_ENV
 
       - name: Build Release History
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "${{ env.TAG }}"
+          automatic_release_tag: "${{ env.RELEASE_TAG }}"
           prerelease: false
           title: "${{ env.TAG }}"
           files: |
@@ -83,8 +85,8 @@ jobs:
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest_openHAB_${{ matrix.addons-ref }}"
+          automatic_release_tag: "latest_openHAB_${{ env.STABLE_TAG }}"
           prerelease: false
-          title: "Latest Build for openHAB ${{ matrix.addons-ref }}"
+          title: "Latest Build for openHAB ${{ env.STABLE_TAG }}"
           files: |
             openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
