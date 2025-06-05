@@ -25,6 +25,7 @@ import org.openhab.core.thing.ThingTypeUID;
  * used across the whole binding.
  *
  * @author Roland Moser - Initial contribution
+ * @author Thomas M. - adapted to new FoxInsights Customer API
  */
 @NonNullByDefault
 public class OilFoxBindingConstants {

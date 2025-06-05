@@ -57,6 +57,7 @@ import com.google.gson.JsonParser;
  * sent to one of the channels.
  *
  * @author Roland Moser - Initial contribution
+ * @author Thomas M. - adapted to new FoxInsights Customer API
  */
 @NonNullByDefault
 public class OilFoxBridgeHandler extends BaseBridgeHandler {

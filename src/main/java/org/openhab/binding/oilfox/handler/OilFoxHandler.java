@@ -49,6 +49,7 @@ import com.google.gson.JsonObject;
 /**
  *
  * @author Roland Moser - Initial contribution
+ * @author Thomas M. - adapted to new FoxInsights Customer API
  */
 
 @NonNullByDefault
