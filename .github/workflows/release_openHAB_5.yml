@@ -63,14 +63,13 @@ jobs:
         run: echo "TAG=openHAB_${{ matrix.addons-ref }}_$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Build Release History
-        uses: "marvinpinto/action-automatic-releases@latest"
+        uses: "softprops/action-gh-release@v2"
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "${{ env.TAG }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          tag_name: "${{ env.TAG }}"
           prerelease: false
-          title: "${{ env.TAG }}"
-          files: |
-            openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
+          name: "${{ env.TAG }}"
+          files: openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
 
       - name: rename jar files
         run: | 
@@ -78,11 +77,10 @@ jobs:
           mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5*-SNAPSHOT-sources.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-5.0.0-sources.jar
 
       - name: Build latest Release
-        uses: "marvinpinto/action-automatic-releases@latest"
+        uses: "softprops/action-gh-release@v2"
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest_openHAB_${{ matrix.addons-ref }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          tag_name: "latest_openHAB_${{ matrix.addons-ref }}"
           prerelease: false
-          title: "Latest Build for openHAB ${{ matrix.addons-ref }}"
-          files: |
-            openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
+          name: "Latest Build for openHAB ${{ matrix.addons-ref }}"
+          files: openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
