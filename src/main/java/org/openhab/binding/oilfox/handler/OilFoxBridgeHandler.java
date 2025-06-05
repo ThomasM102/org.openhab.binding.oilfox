@@ -297,10 +297,10 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     }
                 }
             } catch (InterruptedIOException e) {
-                // do not set thing OFFLINE, retrywith user/password
+                // do not set thing OFFLINE, retry with user/password
                 logger.debug("login(): refresh token exception InterruptedIOException {}", e.getMessage());
             } catch (IOException e) {
-                // do not set thing OFFLINE, retrywith user/password
+                // do not set thing OFFLINE, retry with user/password
                 logger.debug("login(): refresh token exception IOException {}", e.getMessage());
             }
         }
