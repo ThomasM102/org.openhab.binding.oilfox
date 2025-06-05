@@ -19,6 +19,7 @@ import org.eclipse.jdt.annotation.Nullable;
  * The {@link OilFoxBridgeConfiguration} class contains fields mapping thing configuration parameters.
  *
  * @author Roland Moser - Initial contribution
+ * @author Thomas M. - adapted to new FoxInsights Customer API
  */
 
 @NonNullByDefault

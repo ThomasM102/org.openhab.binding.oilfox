@@ -21,6 +21,7 @@ import com.google.gson.JsonArray;
 /**
  *
  * @author Roland Moser - Initial contribution
+ * @author Thomas M. - adapted to new FoxInsights Customer API
  */
 
 @NonNullByDefault
