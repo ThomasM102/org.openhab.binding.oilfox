@@ -81,7 +81,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         synchronized (this) {
             logger.debug("readStatus(): started");
             if (!login()) { // refresh access token
-                logger.debug("readStatus(): login failed");
+                logger.error("readStatus(): login failed");
                 return; // login failed
             }
             logger.debug("readStatus(): login successful");
@@ -92,6 +92,10 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
             try {
                 JsonElement responseObject = getAllDevices();
+                if (responseObject == null) {
+                    logger.debug("readStatus(): responseObject is null");
+                    return;
+                }
                 if (responseObject.isJsonObject()) {
                     JsonObject object = responseObject.getAsJsonObject();
                     JsonArray devices = object.get("items").getAsJsonArray();
@@ -166,10 +170,12 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     // communication with OilFox Cloud
+    @Nullable
     protected JsonElement query(String address) throws MalformedURLException, IOException {
         return query(address, JsonNull.INSTANCE);
     }
 
+    @Nullable
     protected JsonElement query(String path, JsonElement requestObject) throws MalformedURLException, IOException {
         try {
             URL url = new URI("https://" + config.address + path).toURL();
@@ -213,15 +219,26 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         logger.debug("query(): respose {}", element.toString());
                         return element;
                     } catch (InterruptedIOException e) {
-                        logger.debug("query(): request interrupted {}", e.getMessage());
-                        throw new IOException("query(): create InputStreamReader() failed");
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        logger.error("query(): request interrupted {}", e.getMessage());
                     } catch (IOException e) {
-                        throw new IOException("query(): create InputStreamReader() failed");
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        logger.error("query(): IOException {}", e.getMessage());
                     }
             }
         } catch (URISyntaxException e) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             throw new MalformedURLException("invalid url");
+        } catch (InterruptedIOException e) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            // do not set thing OFFLINE, retry with user/password
+            logger.error("query(): failed with InterruptedIOException: {}", e.getMessage());
+        } catch (IOException e) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            // do not set thing OFFLINE, retry with user/password
+            logger.error("query(): failed with IOException: {}", e.getMessage());
         }
+        return null;
     }
 
     @Nullable
@@ -317,6 +334,10 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             requestObject.addProperty("password", config.password);
 
             JsonElement responseObject = query("/customer-api/v1/login", requestObject);
+            if (responseObject == null) {
+                logger.debug("login(): responseObject is null");
+                return false;
+            }
             logger.trace("login(): responseObject: {}", responseObject.toString());
 
             if (responseObject.isJsonObject()) {
@@ -343,8 +364,13 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         return false;
     }
 
+    @Nullable
     public JsonElement getAllDevices() throws MalformedURLException, IOException {
         JsonElement responseObject = query("/customer-api/v1/device");
+        if (responseObject == null) {
+            logger.debug("getAllDevices(): responseObject is null");
+            return null;
+        }
         logger.debug("getAllDevices(): responseObject: {}", responseObject.toString());
 
         if (responseObject.isJsonObject()) {
@@ -375,10 +401,14 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                             oilFoxStatusListener.onOilFoxAdded(this.getThing().getUID(), hwid);
                         } catch (Exception e) {
                             logger.error("An exception occurred while calling the OilFoxStatusListener", e);
+                            return null;
                         }
                     }
                 }
             }
+        } else {
+            logger.error("getAllDevices(): invalid responseObject");
+            return null;
         }
         return responseObject;
     }
