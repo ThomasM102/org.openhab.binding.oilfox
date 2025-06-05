@@ -80,7 +80,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     private void readStatus() {
         synchronized (this) {
             logger.debug("readStatus(): started");
-            login(); // refresh access token
+            if (!login()) { // refresh access token
+                logger.debug("readStatus(): login failed");
+                return; // login failed
+            }
+            logger.debug("readStatus(): login successful");
 
             if (getThing().getStatus() != ThingStatus.ONLINE) {
                 return;
@@ -272,12 +276,12 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         }
     }
 
-    private void login() {
+    private boolean login() {
         if (refreshToken != null) { // we have a refresh access token, use this
             long minutes = MINUTES.between(accessTokenTime, LocalDateTime.now());
             if (minutes < 15) {
                 logger.debug("login(): access token age {} minutes, no need to refresh", minutes);
-                return;
+                return true;
             }
             logger.debug("login(): access token age {} minutes, need to refresh", minutes);
             try {
@@ -293,7 +297,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         logger.debug("login(): access token: {}", accessToken);
                         logger.debug("login(): refresh token: {}", refreshToken);
                         updateStatus(ThingStatus.ONLINE);
-                        return; // refresh access token was succesful
+                        return true; // refresh access token was succesful
                     }
                 }
             } catch (InterruptedIOException e) {
@@ -305,34 +309,38 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             }
         }
 
-        if (accessToken == null) { // login with user/password
-            logger.debug("login(): no access token, login to FoxInsights API with user and password");
-            try {
-                JsonObject requestObject = new JsonObject();
-                requestObject.addProperty("email", config.email);
-                requestObject.addProperty("password", config.password);
+        // login with user/password
+        logger.debug("login(): login to FoxInsights API with user and password");
+        try {
+            JsonObject requestObject = new JsonObject();
+            requestObject.addProperty("email", config.email);
+            requestObject.addProperty("password", config.password);
 
-                JsonElement responseObject = query("/customer-api/v1/login", requestObject);
-                logger.trace("login(): responseObject: {}", responseObject.toString());
+            JsonElement responseObject = query("/customer-api/v1/login", requestObject);
+            logger.trace("login(): responseObject: {}", responseObject.toString());
 
-                if (responseObject.isJsonObject()) {
-                    JsonObject object = responseObject.getAsJsonObject();
-                    accessToken = object.get("access_token").getAsString();
-                    accessTokenTime = LocalDateTime.now();
-                    refreshToken = object.get("refresh_token").getAsString();
-                    logger.debug("login(): access token: {}", accessToken);
-                    logger.debug("login(): refresh token: {}", refreshToken);
-                }
-                updateStatus(ThingStatus.ONLINE);
-            } catch (InterruptedIOException e) {
-                logger.debug("login(): user/password exception InterruptedIOException {}", e.getMessage());
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-
-            } catch (IOException e) {
-                logger.error("login(): user/password exception IOException {}", e.getMessage(), e);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            if (responseObject.isJsonObject()) {
+                JsonObject object = responseObject.getAsJsonObject();
+                accessToken = object.get("access_token").getAsString();
+                accessTokenTime = LocalDateTime.now();
+                refreshToken = object.get("refresh_token").getAsString();
+                logger.debug("login(): access token: {}", accessToken);
+                logger.debug("login(): refresh token: {}", refreshToken);
+            } else {
+                logger.error("login(): invalid responseObject");
+                return false;
             }
+            updateStatus(ThingStatus.ONLINE);
+            return true;
+        } catch (InterruptedIOException e) {
+            logger.debug("login(): user/password InterruptedIOException: {}", e.getMessage());
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+
+        } catch (IOException e) {
+            logger.error("login(): user/password IOException: {}", e.getMessage(), e);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
         }
+        return false;
     }
 
     public JsonElement getAllDevices() throws MalformedURLException, IOException {
