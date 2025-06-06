@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.oilfox.handler;
 
+import static java.lang.Math.abs;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 import java.math.BigInteger;
@@ -57,6 +58,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
     private final Logger logger = LoggerFactory.getLogger(OilFoxHandler.class);
     private @Nullable ScheduledFuture<?> deviceRefreshJob;
+    private LocalDateTime nextDeviceRefresh = LocalDateTime.now();
 
     public OilFoxHandler(Thing thing) {
         super(thing);
@@ -236,6 +238,13 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             // cancel old job
             ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
             if (localDeviceRefreshJob != null) {
+                // check if metering time has not changed
+                if (abs(MINUTES.between(dateTime, nextDeviceRefresh)) <= 1) {
+                    logger.debug(
+                            "onOilFoxRefresh(): hwid {}: device metering time unchanged, keep additional refresh schedule in {} minutes",
+                            deviceHWID, minutes);
+                    return;
+                }
                 logger.debug("onOilFoxRefresh(): hwid {}: cancel additional refresh schedule", deviceHWID);
                 localDeviceRefreshJob.cancel(false);
             }
@@ -244,6 +253,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             deviceRefreshJob = scheduler.schedule(() -> {
                 handleCommand(null, RefreshType.REFRESH);
             }, minutes, TimeUnit.MINUTES);
+            nextDeviceRefresh = dateTime;
             return;
         }
 
