@@ -231,11 +231,9 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             throw new MalformedURLException("invalid url");
         } catch (InterruptedIOException e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-            // do not set thing OFFLINE, retry with user/password
             logger.error("query(): failed with InterruptedIOException: {}", e.getMessage());
         } catch (IOException e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
-            // do not set thing OFFLINE, retry with user/password
             logger.error("query(): failed with IOException: {}", e.getMessage());
         }
         return null;
@@ -281,7 +279,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         throw new IOException("queryRefreshToken(): create InputStreamReader() failed");
                     }
                 default:
-                    // refresh token can be invalid after login from another system
+                    // refresh token invalid
                     logger.debug("queryRefreshToken(): refresh access token failed, response code {}",
                             request.getResponseCode());
                     accessToken = null;
