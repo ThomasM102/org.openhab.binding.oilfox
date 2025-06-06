@@ -206,17 +206,12 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             request.connect();
 
             switch (request.getResponseCode()) {
-                case 400:
-                    throw new IOException("login to FoxInsights API failed");
-                case 401:
-                    throw new IOException("FoxInsights API Unauthorized");
-                case 200:
-                    // authorized
-                default:
-                    try (Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8")) {
+                case 200: // authorized
+                    try {
+                        Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
                         JsonElement element = JsonParser.parseReader(reader);
                         reader.close();
-                        logger.debug("query(): respose {}", element.toString());
+                        logger.debug("query(): response {}", element.toString());
                         return element;
                     } catch (InterruptedIOException e) {
                         updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
@@ -225,6 +220,21 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                         logger.error("query(): IOException {}", e.getMessage());
                     }
+                    break;
+                case 401:
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            "query request failed: password invalid");
+                    logger.error("query(): request failed, password invalid");
+                    break;
+                case 404:
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            "query request failed: user " + config.email + "not valid");
+                    logger.error("query(): request failed, user {} not valid", config.email);
+                    break;
+                default:
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            "query request failed, response code " + request.getResponseCode());
+                    logger.error("query(): request failed, response code {}", request.getResponseCode());
             }
         } catch (URISyntaxException e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
@@ -270,7 +280,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     try (Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8")) {
                         JsonElement element = JsonParser.parseReader(reader);
                         reader.close();
-                        logger.debug("queryRefreshToken(): respose {}", element.toString());
+                        logger.debug("queryRefreshToken(): response {}", element.toString());
                         return element;
                     } catch (InterruptedIOException e) {
                         logger.debug("queryRefreshToken(): request interrupted {}", e.getMessage());
