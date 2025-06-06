@@ -29,7 +29,10 @@ import org.openhab.binding.oilfox.OilFoxBindingConstants;
 import org.openhab.binding.oilfox.internal.OilFoxDeviceConfiguration;
 import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.QuantityType;
 import org.openhab.core.library.types.StringType;
+import org.openhab.core.library.unit.SIUnits;
+import org.openhab.core.library.unit.Units;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
@@ -216,15 +219,21 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT,
                     DecimalType.valueOf(fillLevelPercent.toString()));
 
-            BigInteger fillLevelQuantity = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY)
-                    .getAsBigInteger();
-            logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {}", deviceHWID, fillLevelQuantity);
-            this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
-                    DecimalType.valueOf(fillLevelQuantity.toString()));
-
             String quantityUnit = object.get(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT).getAsString();
             logger.debug("onOilFoxRefresh(): hwid {}: quantityUnit {}", deviceHWID, quantityUnit);
             this.updateState(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT, new StringType(quantityUnit));
+
+            BigInteger fillLevelQuantity = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY)
+                    .getAsBigInteger();
+            if ("L".equals(quantityUnit)) {
+                logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {} L", deviceHWID, fillLevelQuantity);
+                this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
+                        new QuantityType<>(DecimalType.valueOf(fillLevelQuantity.toString()), Units.LITRE));
+            } else {
+                logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {} Kg", deviceHWID, fillLevelQuantity);
+                this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
+                        new QuantityType<>(DecimalType.valueOf(fillLevelQuantity.toString()), SIUnits.KILOGRAM));
+            }
 
             updateStatus(ThingStatus.ONLINE);
 
