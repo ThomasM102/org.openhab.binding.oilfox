@@ -66,27 +66,41 @@ jobs:
           echo "RELEASE_TAG=openHAB_${{ matrix.addons-branch }}_$(date +'%Y-%m-%d')" >> $GITHUB_ENV
           echo "STABLE_TAG=$(echo ${{ matrix.addons-branch }} | cut -d'.' -f1)" >> $GITHUB_ENV
 
+
+      - name: Delete Release History
+        run: |
+          HISTORY="${{ env.RELEASE_TAG }}"
+          OUTPUT=$(gh release delete "${HISTORY}" --cleanup-tag --yes 2>&1) || [[ "${OUTPUT}" == "release not found" ]]
+        working-directory: openhab-addons/bundles/org.openhab.binding.oilfox
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
       - name: Build Release History
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "${{ env.RELEASE_TAG }}"
-          prerelease: false
-          title: "${{ env.TAG }}"
-          files: |
-            openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
+        run: gh release create "${{ env.RELEASE_TAG }}" --title "Release ${{ env.RELEASE_TAG }}" --latest=false target/*.jar
+        working-directory: openhab-addons/bundles/org.openhab.binding.oilfox
+        env:
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: rename jar files
         run: |
           mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4*-SNAPSHOT.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4.0.0.jar
           mv openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4*-SNAPSHOT-sources.jar openhab-addons/bundles/org.openhab.binding.oilfox/target/org.openhab.binding.oilfox-4.0.0-sources.jar
 
+
+      - name: Delete latest Release
+        run: |
+          LATEST="latest_openHAB_${{ env.STABLE_TAG }}"
+          OUTPUT=$(gh release delete "${LATEST}" --cleanup-tag --yes 2>&1) || [[ "${OUTPUT}" == "release not found" ]]
+        working-directory: openhab-addons/bundles/org.openhab.binding.oilfox
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
       - name: Build latest Release
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest_openHAB_${{ env.STABLE_TAG }}"
-          prerelease: false
-          title: "Latest Build for openHAB ${{ env.STABLE_TAG }}"
-          files: |
-            openhab-addons/bundles/org.openhab.binding.oilfox/target/*.jar
+        run: gh release create "latest_openHAB_${{ env.STABLE_TAG }}" --title "Latest Build for openHAB ${{ env.STABLE_TAG }}" --latest target/*.jar
+        working-directory: openhab-addons/bundles/org.openhab.binding.oilfox
+        env:
+           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
