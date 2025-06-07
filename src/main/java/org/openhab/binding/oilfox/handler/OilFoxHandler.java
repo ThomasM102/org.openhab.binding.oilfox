@@ -81,6 +81,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             final OilFoxDeviceConfiguration config = getConfigAs(OilFoxDeviceConfiguration.class);
             hwid = config.hwid;
             if ((hwid == null) || hwid.isEmpty()) {
+                logger.error("initialize(): hwid missing");
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "hwid missing");
                 return;
             } else {
@@ -104,6 +105,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
             }
         } else {
+            logger.error("initialize(): hwid {]: bridge undefined");
             updateStatus(ThingStatus.OFFLINE);
         }
     }
@@ -122,33 +124,34 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
     }
 
     @Override
+
     public void handleCommand(@Nullable ChannelUID channelUID, Command command) {
         if (channelUID != null) { // if channelUID not set, apply command to all channels
-            logger.debug("handleCommand(): channelUID: {}", channelUID);
+            logger.debug("handleCommand(): hwid {} channelUID: {}", getHWID(), channelUID);
         }
         logger.debug("handleCommand(): command: {}", command);
         if (command == RefreshType.REFRESH) {
             @Nullable
             Bridge bridge = this.getBridge(); // prevent race condition
             if (bridge == null) {
-                logger.error("handleCommand(): bridge not found");
+                logger.error("handleCommand(): hwid {}: bridge not found", getHWID());
                 return;
             }
             @Nullable
             OilFoxBridgeHandler oilfoxBridgeHandler = (OilFoxBridgeHandler) bridge.getHandler(); // get bridge handler
             if (oilfoxBridgeHandler == null) {
-                logger.error("handleCommand(): bridge handler not found");
+                logger.error("handleCommand(): hwid {}: bridge handler not found", getHWID());
                 return;
             }
             oilfoxBridgeHandler.handleCommand(channelUID, command);
             return;
         }
-        logger.error("handleCommand(): unknown command: {}", command);
+        logger.error("handleCommand(): hwid {}: unknown command: {}", getHWID(), command);
     }
 
     @Override
     public void handleRemoval() {
-        logger.debug("handleRemoval():");
+        logger.debug("handleRemoval(): hwid {}", getHWID());
         @Nullable
         Bridge bridge = this.getBridge(); // prevent race condition
         if (bridge != null) {
@@ -173,13 +176,12 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
     @Override
     public @Nullable String getHWID() {
         String hwid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID);
-        logger.debug("getHWID(): hwid {}", hwid);
         return hwid;
     }
 
     @Override
     public void onOilFoxRefresh(JsonArray devices) {
-        String hwid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID);
+        String hwid = getHWID();
         logger.debug("onOilFoxRefresh(): refresh hwid {}", hwid);
         if (hwid == null) {
             logger.error("onOilFoxRefresh(): hwid is not set");
