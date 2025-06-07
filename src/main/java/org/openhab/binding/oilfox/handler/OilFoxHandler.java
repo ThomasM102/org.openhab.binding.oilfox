@@ -110,7 +110,14 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
     @Override
     public void dispose() {
-        logger.debug("dispose(): hwid {}", this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID));
+        String hwid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID);
+        logger.debug("dispose(): hwid {}", hwid);
+        // remove additional schedule
+        ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
+        if (localDeviceRefreshJob != null) {
+            logger.debug("dispose(): hwid {}: cancel additional refresh schedule", hwid);
+            localDeviceRefreshJob.cancel(false);
+        }
         super.dispose();
     }
 
