@@ -233,7 +233,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     break;
                 case 404:
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                            "query request failed: user " + config.email + "not valid");
+                            "query request failed: user " + config.email + " not valid");
                     logger.error("query(): request failed, user {} not valid", config.email);
                     break;
                 case 429:
@@ -293,22 +293,28 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         logger.debug("queryRefreshToken(): response {}", element.toString());
                         return element;
                     } catch (InterruptedIOException e) {
-                        logger.debug("queryRefreshToken(): request interrupted {}", e.getMessage());
-                        throw new IOException("query(): create InputStreamReader() failed");
+                        logger.error("queryRefreshToken(): InterruptedIOException {}", e.getMessage());
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                     } catch (IOException e) {
-                        throw new IOException("queryRefreshToken(): create InputStreamReader() failed");
+                        logger.error("queryRefreshToken(): IOException {}", e.getMessage());
+                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                     }
+                    break;
                 default:
                     // refresh token invalid
-                    logger.debug("queryRefreshToken(): refresh access token failed, response code {}",
+                    logger.error("queryRefreshToken(): refresh access token failed, unexpected response code {}",
                             request.getResponseCode());
-                    accessToken = null;
-                    refreshToken = null;
-                    return null;
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            "queryRefreshToken(): unexpected response code " + request.getResponseCode());
+                    break;
             }
         } catch (URISyntaxException e) {
             throw new MalformedURLException("invalid url");
         }
+        // refresh access token failed
+        accessToken = null;
+        refreshToken = null;
+        return null;
     }
 
     private boolean login() {
@@ -337,10 +343,10 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 }
             } catch (InterruptedIOException e) {
                 // do not set thing OFFLINE, retry with user/password
-                logger.debug("login(): refresh token exception InterruptedIOException {}", e.getMessage());
+                logger.error("login(): refresh token exception InterruptedIOException {}", e.getMessage());
             } catch (IOException e) {
                 // do not set thing OFFLINE, retry with user/password
-                logger.debug("login(): refresh token exception IOException {}", e.getMessage());
+                logger.error("login(): refresh token exception IOException {}", e.getMessage());
             }
         }
 
@@ -353,7 +359,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
             JsonElement responseObject = query("/customer-api/v1/login", requestObject);
             if (responseObject == null) {
-                logger.debug("login(): responseObject is null");
+                logger.error("login(): responseObject is null");
                 return false;
             }
             logger.trace("login(): responseObject: {}", responseObject.toString());
@@ -372,7 +378,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             updateStatus(ThingStatus.ONLINE);
             return true;
         } catch (InterruptedIOException e) {
-            logger.debug("login(): user/password InterruptedIOException: {}", e.getMessage());
+            logger.error("login(): user/password InterruptedIOException: {}", e.getMessage());
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
 
         } catch (IOException e) {
@@ -386,7 +392,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     public JsonElement getAllDevices() throws MalformedURLException, IOException {
         JsonElement responseObject = query("/customer-api/v1/device");
         if (responseObject == null) {
-            logger.debug("getAllDevices(): responseObject is null");
+            logger.error("getAllDevices(): responseObject is null");
             return null;
         }
         logger.debug("getAllDevices(): responseObject: {}", responseObject.toString());
