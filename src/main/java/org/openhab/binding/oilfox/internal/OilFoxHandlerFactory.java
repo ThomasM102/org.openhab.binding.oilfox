@@ -38,6 +38,7 @@ import org.osgi.service.component.annotations.Component;
  * handlers.
  *
  * @author Roland Moser - Initial contribution
+ * @author Thomas M. - adapted to new FoxInsights Customer API
  */
 @Component(service = ThingHandlerFactory.class, immediate = true, configurationPid = "binding.oilfox")
 @NonNullByDefault
