@@ -74,7 +74,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     public OilFoxBridgeHandler(Bridge bridge) {
         super(bridge);
-        logger.debug("OilFoxBridgeHandler(): create object");
+        String bridgeUID = this.getThing().getUID().toString();
+        logger.debug("OilFoxBridgeHandler(): bridge UID {}: thing created", bridgeUID);
     }
 
     private void readStatus() {
