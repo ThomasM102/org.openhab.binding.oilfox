@@ -30,7 +30,7 @@ public interface OilFoxStatusListener {
      * This method is called whenever an OilFox is removed.
      *
      * @param bridge The bridge the removed OilFox was connected to.
-     * @param oilfox The OilFox which is removed.
+     * @param hwid The hardware id of the OilFox device which is removed.
      */
     void onOilFoxRemoved(ThingUID bridge, String hwid);
 
@@ -38,12 +38,22 @@ public interface OilFoxStatusListener {
      * This method is called whenever an OilFox is added.
      *
      * @param bridge The bridge the added OilFox was connected to.
-     * @param hwid The OilFox which is added.
+     * @param hwid The hardware ID of the OilFox device which is added.
      */
     void onOilFoxAdded(ThingUID bridge, String hwid);
 
+    /**
+     * This method is called to get the hardware ID of the OilFox device
+     *
+     * @return The hardware ID of OilFox
+     */
     @Nullable
     String getHWID();
 
+    /**
+     * This method is called to refresh the channels of OilFox device
+     *
+     * @param devices a array of all device values from the OilFox API
+     */
     void onOilFoxRefresh(JsonArray devices);
 }
