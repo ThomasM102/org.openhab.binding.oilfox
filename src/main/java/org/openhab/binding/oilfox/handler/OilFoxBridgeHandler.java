@@ -81,7 +81,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     private void readStatus() {
         synchronized (this) {
             logger.debug("readStatus(): started");
-            if (!login()) { // refresh access token
+            if (!login()) { // login FoxInsights Customer API or refresh access token
                 logger.error("readStatus(): login failed");
                 return; // login failed
             }
@@ -124,10 +124,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         logger.debug("handleCommand(): command: {}", command);
         if (command == RefreshType.REFRESH) {
             // prevent to overload API fair use from additional refresh at metering time
-            if (channelUID == null) { // called by additional refresh
+            if (channelUID == null) { // called by additional refresh schedule
                 long minutes = MINUTES.between(lastDeviceRefresh, LocalDateTime.now());
                 logger.debug("handleCommand(): last additional device refresh {} minutes ago", minutes);
-                if (minutes < 60) {
+                if (minutes < 60) { // Fair Use Policy: "Getting the status of all of your device every hour is
+                                    // considered to be of fair use and no rate limiting is applied."
                     logger.debug("handleCommand(): too fast refresh, defer request");
                     return;
                 }
@@ -141,7 +142,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void initialize() {
-        logger.debug("initialize():");
+        logger.debug("initialize(): bridge UID {}", this.getThing().getUID().toString());
         // reset config, maybe settings changed
         config = getConfigAs(OilFoxBridgeConfiguration.class);
         accessToken = null;
@@ -429,11 +430,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         return responseObject;
     }
 
-    public boolean registerOilFoxStatusListener(@Nullable OilFoxStatusListener oilFoxStatusListener) {
-        logger.debug("registerOilFoxStatusListener():");
-        if (oilFoxStatusListener == null) {
-            throw new IllegalArgumentException("It's not allowed to pass a null OilFoxStatusListener.");
-        }
+    public boolean registerOilFoxStatusListener(OilFoxStatusListener oilFoxStatusListener) {
+        logger.debug("registerOilFoxStatusListener(): bridge UID {}", this.getThing().getUID().toString());
         return oilFoxStatusListeners.add(oilFoxStatusListener);
     }
 
