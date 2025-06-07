@@ -147,10 +147,6 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         config = getConfigAs(OilFoxBridgeConfiguration.class);
         accessToken = null;
         refreshToken = null;
-        // logger.debug("initialize(): address: {}", config.address);
-        // logger.debug("initialize(): email: {}", config.email);
-        // logger.debug("initialize(): password: {}", config.password);
-        // logger.debug("initialize(): refresh: {}", config.refresh);
         synchronized (this) {
             // cancel old job
             ScheduledFuture<?> localRefreshJob = this.refreshJob; // prevent race condition
@@ -239,6 +235,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                             "query request failed: user " + config.email + "not valid");
                     logger.error("query(): request failed, user {} not valid", config.email);
+                    break;
+                case 429:
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            "query request failed: Too Many Requests");
+                    logger.error("query(): request failed, Too Many Requests");
                     break;
                 default:
                     updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
