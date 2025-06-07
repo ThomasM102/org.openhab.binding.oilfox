@@ -165,7 +165,14 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void dispose() {
-        logger.debug("dispose(): bridge");
+        String bridgeUID = this.getThing().getUID().toString();
+        logger.debug("dispose(): bridge UID {}", bridgeUID);
+        // remove refresh schedule
+        ScheduledFuture<?> localRefreshJob = this.refreshJob; // prevent race condition
+        if (localRefreshJob != null) {
+            logger.debug("dispose(): bridge UID {}: cancel refresh schedule", bridgeUID);
+            localRefreshJob.cancel(false);
+        }
         super.dispose();
     }
 
