@@ -72,12 +72,11 @@ public class OilFoxDiscoveryService extends AbstractDiscoveryService implements 
         try {
             oilFoxBridgeHandler.getAllDevices();
         } catch (MalformedURLException e) {
-            logger.error("Exception occurred during execution: {}", e.getMessage(), e);
+            logger.error("startScan(): MalformedURLException {}", e.getMessage(), e);
         } catch (InterruptedIOException e) {
-            logger.error("Exception occurred during execution: {}", e.getMessage(), e);
-
+            logger.error("startScan(): InterruptedIOException {}", e.getMessage(), e);
         } catch (IOException e) {
-            logger.error("Exception occurred during execution: {}", e.getMessage(), e);
+            logger.error("startScan(): IOException {}", e.getMessage(), e);
         }
     }
 
@@ -118,11 +117,11 @@ public class OilFoxDiscoveryService extends AbstractDiscoveryService implements 
     }
 
     @Override
-    public @Nullable String getHWID() {
+    public @Nullable String getHWID() { // override from OilFoxHandler.java
         return null;
     }
 
     @Override
-    public void onOilFoxRefresh(JsonArray devices) {
+    public void onOilFoxRefresh(JsonArray devices) { // override from OilFoxHandler.java
     }
 }
