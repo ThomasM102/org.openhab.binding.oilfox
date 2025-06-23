@@ -89,19 +89,21 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                 thing.setProperty("hwid", hwid);
             }
         }
-        logger.debug("initialize(): thing ID: {}, hwid: {}, bridge status: {}", getThing().getUID(), hwid,
-                bridgeStatus);
 
         if (bridge != null) {
             if (bridgeStatus == ThingStatus.ONLINE) {
                 ThingHandler handler = bridge.getHandler();
                 if (handler != null) {
+                    logger.debug("initialize(): thingID: {}, hwid: {}: register status listener", getThing().getUID(),
+                            hwid);
                     ((OilFoxBridgeHandler) handler).registerOilFoxStatusListener(this);
                     updateStatus(ThingStatus.ONLINE);
                 } else {
                     ;
                 }
             } else {
+                logger.debug("initialize(): thingID: {}, hwid: {}: invalid bridge status: {}", getThing().getUID(),
+                        hwid, bridgeStatus);
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
             }
         } else {
@@ -182,7 +184,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
     @Override
     public void onOilFoxRefresh(JsonArray devices) {
         String hwid = getHWID();
-        logger.debug("onOilFoxRefresh(): refresh hwid {}", hwid);
+        logger.debug("onOilFoxRefresh(): hwid {}: refresh channels", hwid);
         if (hwid == null) {
             logger.error("onOilFoxRefresh(): hwid is not set");
             return;
@@ -194,7 +196,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             }
             JsonObject object = device.getAsJsonObject();
             String deviceHWID = object.get("hwid").getAsString();
-            logger.debug("onOilFoxRefresh(): source hwid {}", deviceHWID);
+            logger.trace("onOilFoxRefresh(): source hwid {}", deviceHWID);
             if (!hwid.equals(deviceHWID)) {
                 continue;
             }
