@@ -75,7 +75,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     public OilFoxBridgeHandler(Bridge bridge) {
         super(bridge);
         String bridgeUID = this.getThing().getUID().toString();
-        logger.debug("OilFoxBridgeHandler(): bridge UID {}: thing created", bridgeUID);
+        logger.debug("OilFoxBridgeHandler(): bridge UID {}: bridge thing created", bridgeUID);
     }
 
     private void readStatus() {
@@ -194,7 +194,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 if (getThing().getStatus() != ThingStatus.ONLINE) {
                     throw new IOException("Not logged in");
                 }
-                logger.debug("query(): access token: {}", accessToken);
+                logger.trace("query(): access token: {}", accessToken);
                 request.setRequestProperty("Authorization", "Bearer " + accessToken);
             } else { // used by login()
                 request.setRequestMethod("POST");
@@ -216,7 +216,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8");
                         JsonElement element = JsonParser.parseReader(reader);
                         reader.close();
-                        logger.debug("query(): response {}", element.toString());
+                        logger.trace("query(): response {}", element.toString());
                         return element;
                     } catch (InterruptedIOException e) {
                         updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
@@ -335,8 +335,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         accessToken = object.get("access_token").getAsString();
                         accessTokenTime = LocalDateTime.now();
                         refreshToken = object.get("refresh_token").getAsString();
-                        logger.debug("login(): access token: {}", accessToken);
-                        logger.debug("login(): refresh token: {}", refreshToken);
+                        logger.trace("login(): access token: {}", accessToken);
+                        logger.trace("login(): refresh token: {}", refreshToken);
                         updateStatus(ThingStatus.ONLINE);
                         return true; // refresh access token was succesful
                     }
@@ -359,7 +359,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
             JsonElement responseObject = query("/customer-api/v1/login", requestObject);
             if (responseObject == null) {
-                logger.error("login(): responseObject is null");
+                logger.debug("login(): responseObject is null");
                 return false;
             }
             logger.trace("login(): responseObject: {}", responseObject.toString());
@@ -369,8 +369,8 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 accessToken = object.get("access_token").getAsString();
                 accessTokenTime = LocalDateTime.now();
                 refreshToken = object.get("refresh_token").getAsString();
-                logger.debug("login(): access token: {}", accessToken);
-                logger.debug("login(): refresh token: {}", refreshToken);
+                logger.trace("login(): access token: {}", accessToken);
+                logger.trace("login(): refresh token: {}", refreshToken);
             } else {
                 logger.error("login(): invalid responseObject");
                 return false;
@@ -403,7 +403,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
             for (JsonElement device : devices) {
                 String hwid = device.getAsJsonObject().get("hwid").getAsString();
-                logger.debug("getAllDevices(): device from API with hwid: {}", hwid);
+                logger.debug("getAllDevices(): hwid {}: process device from API respone", hwid);
                 // check if device with same hwid exists, HWID must be unique
                 boolean found = false;
                 for (OilFoxStatusListener oilFoxStatusListener : oilFoxStatusListeners) {
@@ -412,9 +412,9 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     if (existingHWID == null) {
                         continue;
                     }
-                    logger.debug("getAllDevices(): existing device HWID {}", existingHWID);
+                    logger.trace("getAllDevices(): existing device HWID {}", existingHWID);
                     if (hwid.equals(existingHWID)) {
-                        logger.debug("getAllDevices(): device with hwid {} exists", hwid);
+                        logger.debug("getAllDevices(): hwid {}: thing exists", hwid);
                         found = true;
                     }
                 }
@@ -438,12 +438,14 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     }
 
     public boolean registerOilFoxStatusListener(OilFoxStatusListener oilFoxStatusListener) {
-        logger.debug("registerOilFoxStatusListener(): bridge UID {}", this.getThing().getUID().toString());
+        logger.debug("registerOilFoxStatusListener(): bridge UID {}: register device hwid: {}",
+                this.getThing().getUID().toString(), oilFoxStatusListener.getHWID());
         return oilFoxStatusListeners.add(oilFoxStatusListener);
     }
 
     public boolean unregisterOilFoxStatusListener(OilFoxStatusListener oilFoxStatusListener) {
-        logger.debug("unregisterOilFoxStatusListener():");
+        logger.debug("unregisterOilFoxStatusListener(): bridge UID {}: unregister device hwid: {}",
+                this.getThing().getUID().toString(), oilFoxStatusListener.getHWID());
         return oilFoxStatusListeners.remove(oilFoxStatusListener);
     }
 }
