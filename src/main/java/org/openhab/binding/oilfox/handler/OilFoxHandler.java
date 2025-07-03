@@ -116,6 +116,18 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
     public void dispose() {
         String hwid = this.getThing().getProperties().get(OilFoxBindingConstants.PROPERTY_HWID);
         logger.debug("dispose(): hwid {}", hwid);
+        // unregister listener
+        @Nullable
+        Bridge bridge = this.getBridge(); // prevent race condition
+        if (bridge != null) {
+            ThingHandler handler = bridge.getHandler();
+            if (handler != null) {
+                logger.debug("dispose(): thingID: {}, hwid: {}: unregister status listener", getThing().getUID(), hwid);
+                ((OilFoxBridgeHandler) handler).unregisterOilFoxStatusListener(this);
+            } else {
+                ;
+            }
+        }
         // remove additional schedule
         ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
         if (localDeviceRefreshJob != null) {
