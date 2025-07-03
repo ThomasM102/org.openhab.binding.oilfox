@@ -124,8 +124,6 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             if (handler != null) {
                 logger.debug("dispose(): thingID: {}, hwid: {}: unregister status listener", getThing().getUID(), hwid);
                 ((OilFoxBridgeHandler) handler).unregisterOilFoxStatusListener(this);
-            } else {
-                ;
             }
         }
         // remove additional schedule
