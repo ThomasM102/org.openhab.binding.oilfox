@@ -266,7 +266,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             logger.debug("queryRefreshToken(): url: {}", url.toString());
 
             String payload = "refresh_token=" + refreshToken;
-            logger.debug("queryRefreshToken(): payload: {}", payload);
+            logger.trace("queryRefreshToken(): payload: {}", payload);
 
             HttpsURLConnection request = (HttpsURLConnection) url.openConnection();
             request.setReadTimeout(10000);
@@ -290,7 +290,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     try (Reader reader = new InputStreamReader(request.getInputStream(), "UTF-8")) {
                         JsonElement element = JsonParser.parseReader(reader);
                         reader.close();
-                        logger.debug("queryRefreshToken(): response {}", element.toString());
+                        logger.trace("queryRefreshToken(): response {}", element.toString());
                         return element;
                     } catch (InterruptedIOException e) {
                         logger.error("queryRefreshToken(): InterruptedIOException {}", e.getMessage());
