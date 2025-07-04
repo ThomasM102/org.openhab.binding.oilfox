@@ -12,7 +12,6 @@
  */
 package org.openhab.binding.oilfox.handler;
 
-import static java.lang.Math.abs;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 import java.math.BigInteger;
@@ -61,7 +60,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
     private final Logger logger = LoggerFactory.getLogger(OilFoxHandler.class);
     private @Nullable ScheduledFuture<?> deviceRefreshJob;
-    private LocalDateTime nextDeviceRefresh = LocalDateTime.now();
+    private LocalDateTime lastDeviceRefresh = LocalDateTime.now().minusDays(1); // make sure initial value in past
 
     public OilFoxHandler(Thing thing) {
         super(thing);
@@ -255,39 +254,44 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                 this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
                         new QuantityType<>(DecimalType.valueOf(fillLevelQuantity.toString()), SIUnits.KILOGRAM));
             }
-
             updateStatus(ThingStatus.ONLINE);
 
-            // schedule additional refresh to time short after next metering
+            // schedule additional refresh to time 5 minutes after next metering
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                     .withZone(ZoneId.of("UTC"));
             ZonedDateTime dateTimeWithZoneOffset = ZonedDateTime.parse(nextMeteringAt, formatter);
-            LocalDateTime dateTime = LocalDateTime.ofInstant(dateTimeWithZoneOffset.toInstant(),
+            LocalDateTime nextDeviceRefresh = LocalDateTime.ofInstant(dateTimeWithZoneOffset.toInstant(),
                     ZoneId.systemDefault());
-            long minutes = MINUTES.between(LocalDateTime.now(), dateTime) + 5; // add 5 minutes to be save to get new
-            // cancel old job
+            logger.debug("onOilFoxRefresh(): hwid {}: device metering in: last {} minutes, next {} minutes", deviceHWID,
+                    MINUTES.between(LocalDateTime.now(), lastDeviceRefresh),
+                    MINUTES.between(LocalDateTime.now(), nextDeviceRefresh));
+
+            // calculate next additional refresh schedule, add 5 minutes to be save to get new metering
+            long nextInMinutes = MINUTES.between(LocalDateTime.now(), nextDeviceRefresh) + 5;
             ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
             if (localDeviceRefreshJob != null) {
                 // check if metering time has not changed
-                if (abs(MINUTES.between(dateTime, nextDeviceRefresh)) <= 1) {
+                if (MINUTES.between(lastDeviceRefresh, nextDeviceRefresh) == 0) {
                     logger.debug(
-                            "onOilFoxRefresh(): hwid {}: device metering time unchanged, keep additional refresh schedule in {} minutes",
-                            deviceHWID, minutes);
+                            "onOilFoxRefresh(): hwid {}: device metering time unchanged, keep refresh schedule in {} minutes",
+                            deviceHWID, nextInMinutes);
                     return;
                 }
-                logger.debug("onOilFoxRefresh(): hwid {}: cancel additional refresh schedule", deviceHWID);
-                localDeviceRefreshJob.cancel(false);
+                // cleanup invalid additional refresh schedule after manual metering
+                localDeviceRefreshJob.cancel(false); // false = does not cancel current running schedule
             }
+
+            // add next additional refresh schedule
             logger.debug("onOilFoxRefresh(): hwid {}: add additional refresh schedule in {} minutes", deviceHWID,
-                    minutes);
+                    nextInMinutes);
             deviceRefreshJob = scheduler.schedule(() -> {
                 handleCommand(null, RefreshType.REFRESH);
-            }, minutes, TimeUnit.MINUTES);
-            nextDeviceRefresh = dateTime;
+            }, nextInMinutes, TimeUnit.MINUTES);
+            lastDeviceRefresh = nextDeviceRefresh;
             return;
         }
 
-        // Oilfox not found
+        // Oilfox device HWID not found in API response
         updateStatus(ThingStatus.OFFLINE);
     }
 }
