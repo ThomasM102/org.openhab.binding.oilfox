@@ -148,9 +148,10 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         accessToken = null;
         refreshToken = null;
         synchronized (this) {
-            // cancel old job
+            // cancel old job if any
             ScheduledFuture<?> localRefreshJob = this.refreshJob; // prevent race condition
             if (localRefreshJob != null) {
+                logger.debug("dispose(): bridge UID {}: cancel refresh schedule", this.getThing().getUID().toString());
                 localRefreshJob.cancel(false);
             }
             refreshJob = scheduler.scheduleWithFixedDelay(() -> {
@@ -163,13 +164,13 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void dispose() {
-        String bridgeUID = this.getThing().getUID().toString();
-        logger.debug("dispose(): bridge UID {}", bridgeUID);
+        logger.debug("dispose(): bridge UID {}", this.getThing().getUID().toString());
         // remove refresh schedule
         ScheduledFuture<?> localRefreshJob = this.refreshJob; // prevent race condition
         if (localRefreshJob != null) {
-            logger.debug("dispose(): bridge UID {}: cancel refresh schedule", bridgeUID);
+            logger.debug("dispose(): bridge UID {}: cancel refresh schedule", this.getThing().getUID().toString());
             localRefreshJob.cancel(false);
+            this.refreshJob = null;
         }
         super.dispose();
     }
