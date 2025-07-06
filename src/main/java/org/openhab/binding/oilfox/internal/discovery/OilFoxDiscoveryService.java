@@ -59,11 +59,13 @@ public class OilFoxDiscoveryService extends AbstractDiscoveryService implements 
     }
 
     public void activate() {
+        logger.debug("activate(): register status listener");
         oilFoxBridgeHandler.registerOilFoxStatusListener(this);
     }
 
     @Override
     public void deactivate() {
+        logger.debug("deactivate(): unregister status listener");
         oilFoxBridgeHandler.unregisterOilFoxStatusListener(this);
     }
 
