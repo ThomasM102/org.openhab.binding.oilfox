@@ -5,9 +5,9 @@
 	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
 	<!-- Sample Thing Type -->
-	<bridge-type id="bridge">
-		<label>OilFox Bridge</label>
-		<description>OilFox Bridge connect to official customer API (https://github.com/foxinsights/customer-api)</description>
+	<bridge-type id="account">
+		<label>OilFox Account</label>
+		<description>OilFox Account to connect to official customer API (https://github.com/foxinsights/customer-api)</description>
 		<semantic-equipment-tag>NetworkAppliance</semantic-equipment-tag>
 
 		<config-description>

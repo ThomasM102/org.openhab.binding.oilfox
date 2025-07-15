@@ -33,7 +33,7 @@ public class OilFoxBindingConstants {
     private static final String BINDING_ID = "oilfox";
 
     // List of all Thing Type UIDs
-    public static final ThingTypeUID THING_TYPE_BRIDGE = new ThingTypeUID(BINDING_ID, "bridge");
+    public static final ThingTypeUID THING_TYPE_BRIDGE = new ThingTypeUID(BINDING_ID, "account");
     public static final ThingTypeUID THING_TYPE_OILFOX = new ThingTypeUID(BINDING_ID, "device");
 
     // List of all Channel ids

@@ -7,18 +7,18 @@ This binding allows you to check the fuel level in your tank.
 ## Supported Things
 
 
-| Thing type               | Name          |
-|--------------------------|---------------|
-| bridge                   | OilFox Bridge |
-| device                   | OilFox Device |
+| Thing type               | Name           |
+|--------------------------|----------------|
+| account                  | OilFox Account |
+| device                   | OilFox Device  |
 
 
-- `bridge`: Connect OpenHAB to OilFox cloud server via [FoxInsights Customer API](https://github.com/foxinsights/customer-api)
-- `device`: A OilFox tank fill level measuring hardware device
+- `account`: Connect openHAB to OilFox cloud server via [FoxInsights Customer API](https://github.com/foxinsights/customer-api)
+- `device` : A OilFox tank fill level measuring hardware device
 
 ## Discovery
 
-An account must be specified in the OilFox bridge configuration, all OilFox devices for an account are discovered automatically.
+An account must be specified in the OilFox account configuration, all OilFox devices for an account are discovered automatically.
 
 ## Binding Configuration
 
@@ -69,18 +69,18 @@ There are several settings for an account:
 ### Thing Configuration
 
 ```java
-Bridge oilfox:bridge:mybridge [ email="my-email@provider.com", password="my-password", refresh=8 ]
-Thing oilfox:device:mybridge:mydevice "OilFox Device" (oilfox:bridge:mybridge) @ "Oiltank Room" [ hwid="XX123456789" ]
+Bridge oilfox:account:myaccount [ email="my-email@provider.com", password="my-password", refresh=6 ]
+Thing oilfox:device:myaccount:mydevice "OilFox Device" (oilfox:account:myaccount) @ "Oiltank Room" [ hwid="XX123456789" ]
 ```
 
 ### Item Configuration
 
 ```java
-DateTime Current_Metering_At "current metering at" {channel="oilfox:device:mybridge:mydevice:currentMeteringAt"}
-DateTime Next_Metering_At "next metering at" {channel="oilfox:device:mybridge:mydevice:nextMeteringAt"}
-Number Days_Reach "days reach" {channel="oilfox:device:mybridge:mydevice:daysReach", stateDescription=" "[ pattern="%.0f days" ]}
-String Battery_Level "battery level" {channel="oilfox:device:mybridge:mydevice:batteryLevel"}
-Number Fill_Level_Percent "fill level percent" {channel="oilfox:device:mybridge:mydevice:fillLevelPercent"}
-Number Fill_Level_Quantity "fill level quantity" {channel="oilfox:device:mybridge:mydevice:fillLevelQuantity"}
-String Quantity_Unit "quantity unit" {channel="oilfox:device:mybridge:mydevice:quantityUnit"}
+DateTime Current_Metering_At "current metering at" {channel="oilfox:device:myaccount:mydevice:currentMeteringAt"}
+DateTime Next_Metering_At "next metering at" {channel="oilfox:device:myaccount:mydevice:nextMeteringAt"}
+Number Days_Reach "days reach" {channel="oilfox:device:myaccount:mydevice:daysReach", stateDescription=" "[ pattern="%.0f days" ]}
+String Battery_Level "battery level" {channel="oilfox:device:myaccount:mydevice:batteryLevel"}
+Number Fill_Level_Percent "fill level percent" {channel="oilfox:device:myaccount:mydevice:fillLevelPercent"}
+Number Fill_Level_Quantity "fill level quantity" {channel="oilfox:device:myaccount:mydevice:fillLevelQuantity"}
+String Quantity_Unit "quantity unit" {channel="oilfox:device:myaccount:mydevice:quantityUnit"}
 ```
