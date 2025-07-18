@@ -70,6 +70,7 @@
 		<description>battery level</description>
 		<category>Battery</category>
 		<tags>
+			<tag>Energy</tag>
 			<tag>Status</tag>
 		</tags>
 		<state readOnly="true">
