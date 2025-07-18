@@ -15,20 +15,20 @@
 		<semantic-equipment-tag>Sensor</semantic-equipment-tag>
 
 		<channels>
-			<channel id="currentMeteringAt" typeId="currentMeteringAt"/>
-			<channel id="nextMeteringAt" typeId="nextMeteringAt"/>
-			<channel id="daysReach" typeId="daysReach"/>
-			<channel id="batteryLevel" typeId="batteryLevel"/>
-			<channel id="fillLevelPercent" typeId="fillLevelPercent"/>
-			<channel id="fillLevelQuantity" typeId="fillLevelQuantity"/>
-			<channel id="quantityUnit" typeId="quantityUnit"/>
+			<channel id="current-metering-at" typeId="current-metering-at"/>
+			<channel id="next-metering-at" typeId="next-metering-at"/>
+			<channel id="days-reach" typeId="days-reach"/>
+			<channel id="battery-level" typeId="battery-level"/>
+			<channel id="fill-level-percent" typeId="fill-level-percent"/>
+			<channel id="fill-level-quantity" typeId="fill-level-quantity"/>
+			<channel id="quantity-unit" typeId="quantity-unit"/>
 		</channels>
 
 		<representation-property>hwid</representation-property>
 	</thing-type>
 
 	<!-- Channel Types -->
-	<channel-type id="currentMeteringAt">
+	<channel-type id="current-metering-at">
 		<item-type>DateTime</item-type>
 		<label>Current Metering</label>
 		<description>current metering at</description>
@@ -40,7 +40,7 @@
 		<state readOnly="true"/>
 	</channel-type>
 
-	<channel-type id="nextMeteringAt">
+	<channel-type id="next-metering-at">
 		<item-type>DateTime</item-type>
 		<label>Next Metering</label>
 		<description>next metering at</description>
@@ -52,7 +52,7 @@
 		<state readOnly="true"/>
 	</channel-type>
 
-	<channel-type id="daysReach">
+	<channel-type id="days-reach">
 		<item-type>Number</item-type>
 		<label>Days Reach</label>
 		<description>days reach</description>
@@ -64,7 +64,7 @@
 		<state readOnly="true" min="0" pattern="%.0f days"></state>
 	</channel-type>
 
-	<channel-type id="batteryLevel">
+	<channel-type id="battery-level">
 		<item-type>String</item-type>
 		<label>Battery Level</label>
 		<description>battery level</description>
@@ -84,7 +84,7 @@
 		</state>
 	</channel-type>
 
-	<channel-type id="fillLevelPercent">
+	<channel-type id="fill-level-percent">
 		<item-type unitHint="%">Number:Dimensionless</item-type>
 		<label>Fill Level Percentage</label>
 		<description>fill level in percentage, 0 to 100</description>
@@ -96,7 +96,7 @@
 		<state readOnly="true" min="0" max="100" pattern="%.0f %%"></state>
 	</channel-type>
 
-	<channel-type id="fillLevelQuantity">
+	<channel-type id="fill-level-quantity">
 		<item-type>Number</item-type>
 		<label>Fill Level Quantity</label>
 		<description>fill level quantity</description>
@@ -108,7 +108,7 @@
 		<state readOnly="true"/>
 	</channel-type>
 
-	<channel-type id="quantityUnit">
+	<channel-type id="quantity-unit">
 		<item-type>String</item-type>
 		<label>Quantity Unit</label>
 		<description>quantity unit</description>

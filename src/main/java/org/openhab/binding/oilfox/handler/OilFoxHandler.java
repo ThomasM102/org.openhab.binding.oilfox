@@ -210,17 +210,17 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                 continue;
             }
 
-            String currentMeteringAt = object.get(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT).getAsString();
+            String currentMeteringAt = object.get(OilFoxBindingConstants.OILFOX_CURRENT_METERING_AT).getAsString();
             logger.debug("onOilFoxRefresh(): hwid {}: currentMeteringAt {}", deviceHWID, currentMeteringAt);
             this.updateState(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT, new DateTimeType(currentMeteringAt));
 
-            String nextMeteringAt = object.get(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT).getAsString();
+            String nextMeteringAt = object.get(OilFoxBindingConstants.OILFOX_NEXT_METERING_AT).getAsString();
             logger.debug("onOilFoxRefresh(): hwid {}: nextMeteringAt {}", deviceHWID, nextMeteringAt);
             this.updateState(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT, new DateTimeType(nextMeteringAt));
 
             // first days this information is missing with a new OilFox device
             @Nullable
-            JsonElement daysReachElement = object.get(OilFoxBindingConstants.CHANNEL_DAYS_REACH);
+            JsonElement daysReachElement = object.get(OilFoxBindingConstants.OILFOX_DAYS_REACH);
             if (daysReachElement != null) {
                 BigInteger daysReach = daysReachElement.getAsBigInteger();
                 logger.debug("onOilFoxRefresh(): hwid {}: daysReach {}", deviceHWID, daysReach);
@@ -229,21 +229,21 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                 logger.debug("onOilFoxRefresh(): hwid {}: daysReach missing from API", deviceHWID);
             }
 
-            String batteryLevel = object.get(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL).getAsString();
+            String batteryLevel = object.get(OilFoxBindingConstants.OILFOX_BATTERY_LEVEL).getAsString();
             logger.debug("onOilFoxRefresh(): hwid {}: batteryLevel {}", deviceHWID, batteryLevel);
             this.updateState(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL, new StringType(batteryLevel));
 
-            BigInteger fillLevelPercent = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT)
+            BigInteger fillLevelPercent = object.get(OilFoxBindingConstants.OILFOX_FILL_LEVEL_PERCENT)
                     .getAsBigInteger();
             logger.debug("onOilFoxRefresh(): hwid {}: fillLevelPercent {}", deviceHWID, fillLevelPercent);
             this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT,
                     DecimalType.valueOf(fillLevelPercent.toString()));
 
-            String quantityUnit = object.get(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT).getAsString();
+            String quantityUnit = object.get(OilFoxBindingConstants.OILFOX_QUANTITY_UNIT).getAsString();
             logger.debug("onOilFoxRefresh(): hwid {}: quantityUnit {}", deviceHWID, quantityUnit);
             this.updateState(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT, new StringType(quantityUnit));
 
-            BigInteger fillLevelQuantity = object.get(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY)
+            BigInteger fillLevelQuantity = object.get(OilFoxBindingConstants.OILFOX_FILL_LEVEL_QUANTITY)
                     .getAsBigInteger();
             if ("L".equals(quantityUnit)) {
                 logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {} L", deviceHWID, fillLevelQuantity);

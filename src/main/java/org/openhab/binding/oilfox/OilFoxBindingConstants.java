@@ -36,14 +36,23 @@ public class OilFoxBindingConstants {
     public static final ThingTypeUID THING_TYPE_BRIDGE = new ThingTypeUID(BINDING_ID, "account");
     public static final ThingTypeUID THING_TYPE_OILFOX = new ThingTypeUID(BINDING_ID, "device");
 
+    // List of all OilFox API parameter
+    public static final String OILFOX_CURRENT_METERING_AT = "currentMeteringAt";
+    public static final String OILFOX_NEXT_METERING_AT = "nextMeteringAt";
+    public static final String OILFOX_DAYS_REACH = "daysReach";
+    public static final String OILFOX_BATTERY_LEVEL = "batteryLevel";
+    public static final String OILFOX_FILL_LEVEL_PERCENT = "fillLevelPercent";
+    public static final String OILFOX_FILL_LEVEL_QUANTITY = "fillLevelQuantity";
+    public static final String OILFOX_QUANTITY_UNIT = "quantityUnit";
+
     // List of all Channel ids
-    public static final String CHANNEL_CURRENT_METERING_AT = "currentMeteringAt";
-    public static final String CHANNEL_NEXT_METERING_AT = "nextMeteringAt";
-    public static final String CHANNEL_DAYS_REACH = "daysReach";
-    public static final String CHANNEL_BATTERY_LEVEL = "batteryLevel";
-    public static final String CHANNEL_FILL_LEVEL_PERCENT = "fillLevelPercent";
-    public static final String CHANNEL_FILL_LEVEL_QUANTITY = "fillLevelQuantity";
-    public static final String CHANNEL_QUANTITY_UNIT = "quantityUnit";
+    public static final String CHANNEL_CURRENT_METERING_AT = "current-metering-at";
+    public static final String CHANNEL_NEXT_METERING_AT = "next-metering-at";
+    public static final String CHANNEL_DAYS_REACH = "days-reach";
+    public static final String CHANNEL_BATTERY_LEVEL = "battery-level";
+    public static final String CHANNEL_FILL_LEVEL_PERCENT = "fill-level-percent";
+    public static final String CHANNEL_FILL_LEVEL_QUANTITY = "fill-level-quantity";
+    public static final String CHANNEL_QUANTITY_UNIT = "quantity-unit";
 
     // List of all supported thing types
     public static final Set<ThingTypeUID> SUPPORTED_DEVICE_TYPES = Collections.singleton(THING_TYPE_OILFOX);
