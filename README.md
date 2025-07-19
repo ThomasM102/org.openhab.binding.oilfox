@@ -76,11 +76,11 @@ Thing oilfox:device:myaccount:mydevice "OilFox Device" (oilfox:account:myaccount
 ### Item Configuration
 
 ```java
-DateTime Current_Metering_At "current metering at" {channel="oilfox:device:myaccount:mydevice:currentMeteringAt"}
-DateTime Next_Metering_At "next metering at" {channel="oilfox:device:myaccount:mydevice:nextMeteringAt"}
-Number Days_Reach "days reach" {channel="oilfox:device:myaccount:mydevice:daysReach", stateDescription=" "[ pattern="%.0f days" ]}
-String Battery_Level "battery level" {channel="oilfox:device:myaccount:mydevice:batteryLevel"}
-Number Fill_Level_Percent "fill level percent" {channel="oilfox:device:myaccount:mydevice:fillLevelPercent"}
-Number Fill_Level_Quantity "fill level quantity" {channel="oilfox:device:myaccount:mydevice:fillLevelQuantity"}
-String Quantity_Unit "quantity unit" {channel="oilfox:device:myaccount:mydevice:quantityUnit"}
+DateTime Current_Metering_At "current metering at" {channel="oilfox:device:myaccount:mydevice:current-metering-at"}
+DateTime Next_Metering_At "next metering at" {channel="oilfox:device:myaccount:mydevice:next-metering-at"}
+Number Days_Reach "days reach" {channel="oilfox:device:myaccount:mydevice:days-reach", stateDescription=" "[ pattern="%.0f days" ]}
+String Battery_Level "battery level" {channel="oilfox:device:myaccount:mydevice:battery-level"}
+Number Fill_Level_Percent "fill level percent" {channel="oilfox:device:myaccount:mydevice:fill-level-percent"}
+Number Fill_Level_Quantity "fill level quantity" {channel="oilfox:device:myaccount:mydevice:fill-level-quantity"}
+String Quantity_Unit "quantity unit" {channel="oilfox:device:myaccount:mydevice:quantity-unit"}
 ```
