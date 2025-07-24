@@ -6,12 +6,10 @@ This binding allows you to check the fuel level in your tank.
 
 ## Supported Things
 
-
 | Thing type               | Name           |
 |--------------------------|----------------|
 | account                  | OilFox Account |
 | device                   | OilFox Device  |
-
 
 - `account`: Connect openHAB to OilFox cloud server via [FoxInsights Customer API](https://github.com/foxinsights/customer-api)
 - `device` : A OilFox tank fill level measuring hardware device
@@ -30,7 +28,6 @@ There are several settings for an account:
 | email    |   yes    |               | Email registered on the OilFox Cloud    |
 | password |   yes    |               | Password registered on the OilFox Cloud |
 | refresh  |   yes    |             6 | refresh interval in hours               |
-
 
 ## Thing Configuration
 
@@ -62,7 +59,6 @@ There are several settings for an account:
 | MEDIUM   | Medium battery level   |
 | WARNING  | Low battery level      |
 | CRITICAL | Critical battery level |
-
 
 ## Full Example
 
