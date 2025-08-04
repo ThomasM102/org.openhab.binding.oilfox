@@ -319,7 +319,8 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
             // schedule additional refresh to time 5 minutes after next metering
             if (nextMeteringAt != null) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                // miliseconds are optional from API
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'")
                         .withZone(ZoneId.of("UTC"));
                 ZonedDateTime dateTimeWithZoneOffset = ZonedDateTime.parse(nextMeteringAt, formatter);
                 LocalDateTime nextDeviceRefresh = LocalDateTime.ofInstant(dateTimeWithZoneOffset.toInstant(),
