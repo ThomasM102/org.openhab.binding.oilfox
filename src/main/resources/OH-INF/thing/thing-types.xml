@@ -15,6 +15,7 @@
 		<semantic-equipment-tag>Sensor</semantic-equipment-tag>
 
 		<channels>
+			<channel id="validation-error" typeId="validation-error"/>
 			<channel id="current-metering-at" typeId="current-metering-at"/>
 			<channel id="next-metering-at" typeId="next-metering-at"/>
 			<channel id="days-reach" typeId="days-reach"/>
@@ -28,6 +29,29 @@
 	</thing-type>
 
 	<!-- Channel Types -->
+	<channel-type id="validation-error">
+		<item-type>String</item-type>
+		<label>Validation Error</label>
+		<description>validation error</description>
+		<category>Error</category>
+		<tags>
+			<tag>Alarm</tag>
+		</tags>
+		<state readOnly="true">
+			<options>
+				<option value="NO_METERING">No measurement yet</option>
+				<option value="EMPTY_METERING">Incorrect Measurement</option>
+				<option value="NO_EXTRACTED_VALUE">No fill level detected</option>
+				<option value="SENSOR_CONFIG">Faulty measurement</option>
+				<option value="MISSING_STORAGE_CONFIG">Storage configuration missing</option>
+				<option value="INVALID_STORAGE_CONFIG">Incorrect storage configuration</option>
+				<option value="DISTANCE_TOO_SHORT">Measured distance too small</option>
+				<option value="ABOVE_STORAGE_MAX">Storage full</option>
+				<option value="ABOVE_STORAGE_MAX">Calculated filling level implausible</option>
+			</options>
+		</state>
+	</channel-type>
+
 	<channel-type id="current-metering-at">
 		<item-type>DateTime</item-type>
 		<label>Current Metering</label>
