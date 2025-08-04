@@ -39,16 +39,31 @@ There are several settings for an account:
 
 ## Channels
 
-|      Channel      | Type     | Read/Write | Description                                 |
-|-------------------|----------|------------|---------------------------------------------|
-| hwid              | String   |  readonly  | hardware ID of the device                   |
-| currentMeteringAt | DateTime |  readonly  | RFC3339 timestamp                           |
-| nextMeteringAt    | DateTime |  readonly  | RFC3339 timestamp                           |
-| daysReach         | Number   |  readonly  | estimated days until the storage runs empty |
-| batteryLevel      | String   |  readonly  | enum of the battery level, see below        |
-| fillLevelPercent  | Number   |  readonly  | fill level in %, 0-100                      |
-| fillLevelQuantity | Number   |  readonly  | fill level in `kg` or `L`                   |
-| quantityUnit      | String   |  readonly  | unit of the fill level: `kg` or `L`         |
+|      Channel      | Type     | Read/Write | Description                                           |
+|-------------------|----------|------------|-------------------------------------------------------|
+| hwid              | String   |  readonly  | hardware ID of the device                             |
+| currentMeteringAt | DateTime |  readonly  | RFC3339 timestamp                                     |
+| nextMeteringAt    | DateTime |  readonly  | RFC3339 timestamp                                     |
+| daysReach         | Number   |  readonly  | estimated days until the storage runs empty           |
+| validationError   | string   |  readonly  | enum with errors regarding the measurement, see below |
+| batteryLevel      | String   |  readonly  | enum of the battery level, see below                  |
+| fillLevelPercent  | Number   |  readonly  | fill level in %, 0-100                                |
+| fillLevelQuantity | Number   |  readonly  | fill level in `kg` or `L`                             |
+| quantityUnit      | String   |  readonly  | unit of the fill level: `kg` or `L`                   |
+
+### Enum validationError
+
+| name                   | description                          |
+|------------------------|--------------------------------------|
+| NO_METERING            | No measurement yet                   |
+| EMPTY_METERING         | Incorrect Measurement                |
+| NO_EXTRACTED_VALUE     | No fill level detected               |
+| SENSOR_CONFIG          | Faulty measurement                   |
+| MISSING_STORAGE_CONFIG | Storage configuration missing        |
+| INVALID_STORAGE_CONFIG | Incorrect storage configuration      |
+| DISTANCE_TOO_SHORT     | Measured distance too small          |
+| ABOVE_STORAGE_MAX      | Storage full                         |
+| BELOW_STORAGE_MIN      | Calculated filling level implausible |
 
 ### Enum batteryLevel
 
@@ -75,6 +90,7 @@ Thing oilfox:device:myaccount:mydevice "OilFox Device" (oilfox:account:myaccount
 DateTime Current_Metering_At "current metering at" {channel="oilfox:device:myaccount:mydevice:current-metering-at"}
 DateTime Next_Metering_At "next metering at" {channel="oilfox:device:myaccount:mydevice:next-metering-at"}
 Number Days_Reach "days reach" {channel="oilfox:device:myaccount:mydevice:days-reach", stateDescription=" "[ pattern="%.0f days" ]}
+String ValidationError "validation error" {channel="oilfox:device:myaccount:mydevice:validation-error"}
 String Battery_Level "battery level" {channel="oilfox:device:myaccount:mydevice:battery-level"}
 Number Fill_Level_Percent "fill level percent" {channel="oilfox:device:myaccount:mydevice:fill-level-percent"}
 Number Fill_Level_Quantity "fill level quantity" {channel="oilfox:device:myaccount:mydevice:fill-level-quantity"}

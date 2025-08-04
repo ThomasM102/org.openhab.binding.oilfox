@@ -37,6 +37,7 @@ public class OilFoxBindingConstants {
     public static final ThingTypeUID THING_TYPE_OILFOX = new ThingTypeUID(BINDING_ID, "device");
 
     // List of all OilFox API parameter
+    public static final String OILFOX_VALIDATION_ERROR = "validationError";
     public static final String OILFOX_CURRENT_METERING_AT = "currentMeteringAt";
     public static final String OILFOX_NEXT_METERING_AT = "nextMeteringAt";
     public static final String OILFOX_DAYS_REACH = "daysReach";
@@ -46,6 +47,7 @@ public class OilFoxBindingConstants {
     public static final String OILFOX_QUANTITY_UNIT = "quantityUnit";
 
     // List of all Channel ids
+    public static final String CHANNEL_VALIDATION_ERROR = "validation-error";
     public static final String CHANNEL_CURRENT_METERING_AT = "current-metering-at";
     public static final String CHANNEL_NEXT_METERING_AT = "next-metering-at";
     public static final String CHANNEL_DAYS_REACH = "days-reach";

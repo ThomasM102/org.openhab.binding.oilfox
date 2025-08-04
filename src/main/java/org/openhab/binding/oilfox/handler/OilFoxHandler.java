@@ -42,6 +42,7 @@ import org.openhab.core.thing.binding.BaseThingHandler;
 import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.RefreshType;
+import org.openhab.core.types.UnDefType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,90 +205,152 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                 continue;
             }
             JsonObject object = device.getAsJsonObject();
+            @Nullable
+            JsonElement element = null;
+
             String deviceHWID = object.get("hwid").getAsString();
             logger.trace("onOilFoxRefresh(): source hwid {}", deviceHWID);
             if (!hwid.equals(deviceHWID)) {
                 continue;
             }
 
-            String currentMeteringAt = object.get(OilFoxBindingConstants.OILFOX_CURRENT_METERING_AT).getAsString();
-            logger.debug("onOilFoxRefresh(): hwid {}: currentMeteringAt {}", deviceHWID, currentMeteringAt);
-            this.updateState(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT, new DateTimeType(currentMeteringAt));
+            // validation error:
+            element = object.get(OilFoxBindingConstants.OILFOX_VALIDATION_ERROR);
+            if (element != null) {
+                String validationError = element.getAsString();
+                logger.warn("onOilFoxRefresh(): hwid {}: validation error: {}", deviceHWID, validationError);
+                this.updateState(OilFoxBindingConstants.CHANNEL_VALIDATION_ERROR, new StringType(validationError));
+            } else {
+                logger.debug("onOilFoxRefresh(): hwid {}: no validation error", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_VALIDATION_ERROR, UnDefType.UNDEF);
+            }
 
-            String nextMeteringAt = object.get(OilFoxBindingConstants.OILFOX_NEXT_METERING_AT).getAsString();
-            logger.debug("onOilFoxRefresh(): hwid {}: nextMeteringAt {}", deviceHWID, nextMeteringAt);
-            this.updateState(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT, new DateTimeType(nextMeteringAt));
+            // metering times
+            @Nullable
+            String currentMeteringAt = null;
+            element = object.get(OilFoxBindingConstants.OILFOX_CURRENT_METERING_AT);
+            if (element != null) {
+                currentMeteringAt = element.getAsString();
+                logger.debug("onOilFoxRefresh(): hwid {}: currentMeteringAt {}", deviceHWID, currentMeteringAt);
+                this.updateState(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT,
+                        new DateTimeType(currentMeteringAt));
+            } else {
+                logger.warn("onOilFoxRefresh(): hwid {}: current metering time missing from API", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_CURRENT_METERING_AT, UnDefType.UNDEF);
+            }
+
+            @Nullable
+            String nextMeteringAt = null;
+            element = object.get(OilFoxBindingConstants.OILFOX_NEXT_METERING_AT);
+            if (element != null) {
+                nextMeteringAt = element.getAsString();
+                logger.debug("onOilFoxRefresh(): hwid {}: nextMeteringAt {}", deviceHWID, nextMeteringAt);
+                this.updateState(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT, new DateTimeType(nextMeteringAt));
+            } else {
+                logger.warn("onOilFoxRefresh(): hwid {}: next metering time missing from API", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_NEXT_METERING_AT, UnDefType.UNDEF);
+            }
 
             // first days this information is missing with a new OilFox device
-            @Nullable
-            JsonElement daysReachElement = object.get(OilFoxBindingConstants.OILFOX_DAYS_REACH);
-            if (daysReachElement != null) {
-                BigInteger daysReach = daysReachElement.getAsBigInteger();
+            element = object.get(OilFoxBindingConstants.OILFOX_DAYS_REACH);
+            if (element != null) {
+                BigInteger daysReach = element.getAsBigInteger();
                 logger.debug("onOilFoxRefresh(): hwid {}: daysReach {}", deviceHWID, daysReach);
                 this.updateState(OilFoxBindingConstants.CHANNEL_DAYS_REACH, DecimalType.valueOf(daysReach.toString()));
             } else {
-                logger.debug("onOilFoxRefresh(): hwid {}: daysReach missing from API", deviceHWID);
+                logger.info("onOilFoxRefresh(): hwid {}: daysReach missing from API", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_DAYS_REACH, UnDefType.UNDEF);
             }
 
-            String batteryLevel = object.get(OilFoxBindingConstants.OILFOX_BATTERY_LEVEL).getAsString();
-            logger.debug("onOilFoxRefresh(): hwid {}: batteryLevel {}", deviceHWID, batteryLevel);
-            this.updateState(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL, new StringType(batteryLevel));
-
-            BigInteger fillLevelPercent = object.get(OilFoxBindingConstants.OILFOX_FILL_LEVEL_PERCENT)
-                    .getAsBigInteger();
-            logger.debug("onOilFoxRefresh(): hwid {}: fillLevelPercent {}", deviceHWID, fillLevelPercent);
-            this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT,
-                    DecimalType.valueOf(fillLevelPercent.toString()));
-
-            String quantityUnit = object.get(OilFoxBindingConstants.OILFOX_QUANTITY_UNIT).getAsString();
-            logger.debug("onOilFoxRefresh(): hwid {}: quantityUnit {}", deviceHWID, quantityUnit);
-            this.updateState(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT, new StringType(quantityUnit));
-
-            BigInteger fillLevelQuantity = object.get(OilFoxBindingConstants.OILFOX_FILL_LEVEL_QUANTITY)
-                    .getAsBigInteger();
-            if ("L".equals(quantityUnit)) {
-                logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {} L", deviceHWID, fillLevelQuantity);
-                this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
-                        new QuantityType<>(DecimalType.valueOf(fillLevelQuantity.toString()), Units.LITRE));
+            // battery level
+            element = object.get(OilFoxBindingConstants.OILFOX_BATTERY_LEVEL);
+            if (element != null) {
+                String batteryLevel = element.getAsString();
+                logger.debug("onOilFoxRefresh(): hwid {}: batteryLevel {}", deviceHWID, batteryLevel);
+                this.updateState(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL, new StringType(batteryLevel));
             } else {
-                logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {} Kg", deviceHWID, fillLevelQuantity);
-                this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
-                        new QuantityType<>(DecimalType.valueOf(fillLevelQuantity.toString()), SIUnits.KILOGRAM));
+                logger.info("onOilFoxRefresh(): hwid {}: battery level missing from API", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_BATTERY_LEVEL, UnDefType.UNDEF);
             }
+
+            // fill level percent
+            element = object.get(OilFoxBindingConstants.OILFOX_FILL_LEVEL_PERCENT);
+            if (element != null) {
+                BigInteger fillLevelPercent = element.getAsBigInteger();
+                logger.debug("onOilFoxRefresh(): hwid {}: fillLevelPercent {}", deviceHWID, fillLevelPercent);
+                this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT,
+                        DecimalType.valueOf(fillLevelPercent.toString()));
+            } else {
+                logger.warn("onOilFoxRefresh(): hwid {}: fill level percent missing from API", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_PERCENT, UnDefType.UNDEF);
+            }
+
+            // fill level unit
+            String quantityUnit = "L"; // use litre as default
+            element = object.get(OilFoxBindingConstants.OILFOX_QUANTITY_UNIT);
+            if (element != null) {
+                quantityUnit = element.getAsString();
+                logger.debug("onOilFoxRefresh(): hwid {}: quantityUnit {}", deviceHWID, quantityUnit);
+                this.updateState(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT, new StringType(quantityUnit));
+            } else {
+                logger.warn("onOilFoxRefresh(): hwid {}: fill level unit missing from API", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_QUANTITY_UNIT, UnDefType.UNDEF);
+            }
+
+            // fill level quantity
+            element = object.get(OilFoxBindingConstants.OILFOX_FILL_LEVEL_QUANTITY);
+            if (element != null) {
+                BigInteger fillLevelQuantity = element.getAsBigInteger();
+                if ("L".equals(quantityUnit)) {
+                    logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {} L", deviceHWID, fillLevelQuantity);
+                    this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
+                            new QuantityType<>(DecimalType.valueOf(fillLevelQuantity.toString()), Units.LITRE));
+                } else {
+                    logger.debug("onOilFoxRefresh(): hwid {}: fillLevelQuantity {} Kg", deviceHWID, fillLevelQuantity);
+                    this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY,
+                            new QuantityType<>(DecimalType.valueOf(fillLevelQuantity.toString()), SIUnits.KILOGRAM));
+                }
+            } else {
+                logger.warn("onOilFoxRefresh(): hwid {}: fill level quantity missing from API", deviceHWID);
+                this.updateState(OilFoxBindingConstants.CHANNEL_FILL_LEVEL_QUANTITY, UnDefType.UNDEF);
+            }
+
             updateStatus(ThingStatus.ONLINE);
 
             // schedule additional refresh to time 5 minutes after next metering
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-                    .withZone(ZoneId.of("UTC"));
-            ZonedDateTime dateTimeWithZoneOffset = ZonedDateTime.parse(nextMeteringAt, formatter);
-            LocalDateTime nextDeviceRefresh = LocalDateTime.ofInstant(dateTimeWithZoneOffset.toInstant(),
-                    ZoneId.systemDefault());
-            logger.debug("onOilFoxRefresh(): hwid {}: device metering in: last {} minutes, next {} minutes", deviceHWID,
-                    MINUTES.between(LocalDateTime.now(), lastDeviceRefresh),
-                    MINUTES.between(LocalDateTime.now(), nextDeviceRefresh));
+            if (nextMeteringAt != null) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                        .withZone(ZoneId.of("UTC"));
+                ZonedDateTime dateTimeWithZoneOffset = ZonedDateTime.parse(nextMeteringAt, formatter);
+                LocalDateTime nextDeviceRefresh = LocalDateTime.ofInstant(dateTimeWithZoneOffset.toInstant(),
+                        ZoneId.systemDefault());
+                logger.debug("onOilFoxRefresh(): hwid {}: device metering in: last {} minutes, next {} minutes",
+                        deviceHWID, MINUTES.between(LocalDateTime.now(), lastDeviceRefresh),
+                        MINUTES.between(LocalDateTime.now(), nextDeviceRefresh));
 
-            // calculate next additional refresh schedule, add 5 minutes to be save to get new metering
-            long nextInMinutes = MINUTES.between(LocalDateTime.now(), nextDeviceRefresh) + 5;
-            ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
-            if (localDeviceRefreshJob != null) {
-                // check if metering time has not changed
-                if (MINUTES.between(lastDeviceRefresh, nextDeviceRefresh) == 0) {
-                    logger.debug(
-                            "onOilFoxRefresh(): hwid {}: device metering time unchanged, keep refresh schedule in {} minutes",
-                            deviceHWID, nextInMinutes);
-                    return;
+                // calculate next additional refresh schedule, add 5 minutes to be save to get new metering
+                long nextInMinutes = MINUTES.between(LocalDateTime.now(), nextDeviceRefresh) + 5;
+                ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
+                if (localDeviceRefreshJob != null) {
+                    // check if metering time has not changed
+                    if (MINUTES.between(lastDeviceRefresh, nextDeviceRefresh) == 0) {
+                        logger.debug(
+                                "onOilFoxRefresh(): hwid {}: device metering time unchanged, keep refresh schedule in {} minutes",
+                                deviceHWID, nextInMinutes);
+                        return;
+                    }
+                    // cleanup invalid additional refresh schedule after manual metering
+                    localDeviceRefreshJob.cancel(false); // false = does not cancel current running schedule
                 }
-                // cleanup invalid additional refresh schedule after manual metering
-                localDeviceRefreshJob.cancel(false); // false = does not cancel current running schedule
-            }
 
-            // add next additional refresh schedule
-            logger.debug("onOilFoxRefresh(): hwid {}: add additional refresh schedule in {} minutes", deviceHWID,
-                    nextInMinutes);
-            deviceRefreshJob = scheduler.schedule(() -> {
-                handleCommand(null, RefreshType.REFRESH);
-            }, nextInMinutes, TimeUnit.MINUTES);
-            lastDeviceRefresh = nextDeviceRefresh;
+                // add next additional refresh schedule
+                logger.debug("onOilFoxRefresh(): hwid {}: add additional refresh schedule in {} minutes", deviceHWID,
+                        nextInMinutes);
+                deviceRefreshJob = scheduler.schedule(() -> {
+                    handleCommand(null, RefreshType.REFRESH);
+                }, nextInMinutes, TimeUnit.MINUTES);
+                lastDeviceRefresh = nextDeviceRefresh;
+            }
             return;
         }
 
