@@ -14,6 +14,10 @@
 
   <name>openHAB Add-ons :: Bundles :: OilFox Binding</name>
 
+  <properties>
+    <karaf.version>4.4.8</karaf.version>
+  </properties>
+
   <repositories>
     <repository>
       <releases>
@@ -52,5 +56,4 @@
       <url>https://openhab.jfrog.io/openhab/libs-snapshot-local</url>
     </repository>
   </repositories>
-
 </project>
