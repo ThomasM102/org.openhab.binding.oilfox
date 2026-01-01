@@ -14,10 +14,6 @@
 
   <name>openHAB Add-ons :: Bundles :: OilFox Binding</name>
 
-  <properties>
-    <karaf.version>4.4.8</karaf.version>
-  </properties>
-
   <repositories>
     <repository>
       <releases>
