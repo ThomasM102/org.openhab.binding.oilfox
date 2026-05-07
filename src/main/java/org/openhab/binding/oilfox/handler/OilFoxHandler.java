@@ -327,20 +327,25 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             updateStatus(ThingStatus.ONLINE);
 
             // schedule additional refresh to time 5 minutes after next metering
-            if (nextMeteringAt != null) {
+            if (nextMeteringAt != null && currentMeteringAt != null) {
                 // milliseconds are optional from API, 'Z' indicates UTC
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'")
                         .withZone(ZoneOffset.UTC);
-
-                ZonedDateTime nextDeviceRefreshUTC = ZonedDateTime.parse(nextMeteringAt, formatter);
-
-                // Convert API time to the local openHAB time zone
                 TimeZoneProvider tp = this.timeZoneProvider;
                 ZoneId zone = (tp != null) ? tp.getTimeZone() : ZoneId.systemDefault();
-                ZonedDateTime nextDeviceRefresh = nextDeviceRefreshUTC.withZoneSameInstant(zone);
+
+                // Parse and convert directly to local time zone
+                ZonedDateTime nextDeviceRefresh = ZonedDateTime.parse(nextMeteringAt, formatter)
+                        .withZoneSameInstant(zone);
+                ZonedDateTime currentDeviceRefresh = ZonedDateTime.parse(currentMeteringAt, formatter)
+                        .withZoneSameInstant(zone);
+
+                // log device metering in local time zone
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
+                logger.debug("onOilFoxRefresh(): HWID {}: device metering [Last: {}, Next: {}]", deviceHWID,
+                        currentDeviceRefresh.format(timeFormatter), nextDeviceRefresh.format(timeFormatter));
 
                 ZonedDateTime currentTime = now();
-
                 logger.debug("onOilFoxRefresh(): HWID {}: device metering in: last {} minutes, next {} minutes",
                         deviceHWID, MINUTES.between(currentTime, lastDeviceRefresh),
                         MINUTES.between(currentTime, nextDeviceRefresh));
