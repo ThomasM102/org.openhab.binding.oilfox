@@ -15,8 +15,8 @@ package org.openhab.binding.oilfox.handler;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 import java.math.BigInteger;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ScheduledFuture;
@@ -26,6 +26,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.oilfox.OilFoxBindingConstants;
 import org.openhab.binding.oilfox.internal.OilFoxDeviceConfiguration;
+import org.openhab.core.i18n.TimeZoneProvider;
 import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.QuantityType;
@@ -61,10 +62,18 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
     private final Logger logger = LoggerFactory.getLogger(OilFoxHandler.class);
     private @Nullable ScheduledFuture<?> deviceRefreshJob;
-    private LocalDateTime lastDeviceRefresh = LocalDateTime.now().minusDays(1); // make sure initial value in past
+    private ZonedDateTime lastDeviceRefresh = now().minusDays(1); // make sure initial value in past
+    private @Nullable TimeZoneProvider timeZoneProvider;
 
-    public OilFoxHandler(Thing thing) {
+    public OilFoxHandler(Thing thing, @Nullable TimeZoneProvider timeZoneProvider) {
         super(thing);
+        this.timeZoneProvider = timeZoneProvider;
+        this.lastDeviceRefresh = now().minusDays(1);
+    }
+
+    private ZonedDateTime now() {
+        TimeZoneProvider tp = this.timeZoneProvider;
+        return ZonedDateTime.now(tp != null ? tp.getTimeZone() : ZoneId.systemDefault());
     }
 
     @Override
@@ -319,38 +328,45 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
 
             // schedule additional refresh to time 5 minutes after next metering
             if (nextMeteringAt != null) {
-                // miliseconds are optional from API
+                // milliseconds are optional from API, 'Z' indicates UTC
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'")
-                        .withZone(ZoneId.of("UTC"));
-                ZonedDateTime dateTimeWithZoneOffset = ZonedDateTime.parse(nextMeteringAt, formatter);
-                LocalDateTime nextDeviceRefresh = LocalDateTime.ofInstant(dateTimeWithZoneOffset.toInstant(),
-                        ZoneId.systemDefault());
-                logger.debug("onOilFoxRefresh(): hwid {}: device metering in: last {} minutes, next {} minutes",
-                        deviceHWID, MINUTES.between(LocalDateTime.now(), lastDeviceRefresh),
-                        MINUTES.between(LocalDateTime.now(), nextDeviceRefresh));
+                        .withZone(ZoneOffset.UTC);
 
-                // calculate next additional refresh schedule, add 5 minutes to be save to get new metering
-                long nextInMinutes = MINUTES.between(LocalDateTime.now(), nextDeviceRefresh) + 5;
-                ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob; // prevent race condition
+                ZonedDateTime nextDeviceRefreshUTC = ZonedDateTime.parse(nextMeteringAt, formatter);
+
+                // Convert API time to the local openHAB time zone
+                TimeZoneProvider tp = this.timeZoneProvider;
+                ZoneId zone = (tp != null) ? tp.getTimeZone() : ZoneId.systemDefault();
+                ZonedDateTime nextDeviceRefresh = nextDeviceRefreshUTC.withZoneSameInstant(zone);
+
+                ZonedDateTime currentTime = now();
+
+                logger.debug("onOilFoxRefresh(): HWID {}: device metering in: last {} minutes, next {} minutes",
+                        deviceHWID, MINUTES.between(currentTime, lastDeviceRefresh),
+                        MINUTES.between(currentTime, nextDeviceRefresh));
+
+                // calculate next additional refresh schedule, add 5 minutes buffer
+                long nextInMinutes = MINUTES.between(currentTime, nextDeviceRefresh) + 5;
+
+                ScheduledFuture<?> localDeviceRefreshJob = this.deviceRefreshJob;
                 if (localDeviceRefreshJob != null) {
-                    // check if metering time has not changed
                     if (MINUTES.between(lastDeviceRefresh, nextDeviceRefresh) == 0) {
                         logger.debug(
-                                "onOilFoxRefresh(): hwid {}: device metering time unchanged, keep refresh schedule in {} minutes",
+                                "onOilFoxRefresh(): HWID {}: device metering time unchanged, keeping schedule in {} minutes",
                                 deviceHWID, nextInMinutes);
                         return;
                     }
-                    // cleanup invalid additional refresh schedule after manual metering
-                    localDeviceRefreshJob.cancel(false); // false = does not cancel current running schedule
+                    localDeviceRefreshJob.cancel(false);
                 }
 
-                // add next additional refresh schedule
-                logger.debug("onOilFoxRefresh(): hwid {}: add additional refresh schedule in {} minutes", deviceHWID,
-                        nextInMinutes);
-                deviceRefreshJob = scheduler.schedule(() -> {
-                    handleCommand(null, RefreshType.REFRESH);
-                }, nextInMinutes, TimeUnit.MINUTES);
-                lastDeviceRefresh = nextDeviceRefresh;
+                if (nextInMinutes > 0) {
+                    logger.debug("onOilFoxRefresh(): HWID {}: adding additional refresh schedule in {} minutes",
+                            deviceHWID, nextInMinutes);
+                    deviceRefreshJob = scheduler.schedule(() -> {
+                        handleCommand(null, RefreshType.REFRESH);
+                    }, nextInMinutes, TimeUnit.MINUTES);
+                    lastDeviceRefresh = nextDeviceRefresh;
+                }
             }
             return;
         }

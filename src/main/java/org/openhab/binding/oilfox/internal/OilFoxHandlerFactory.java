@@ -23,6 +23,7 @@ import org.openhab.binding.oilfox.handler.OilFoxBridgeHandler;
 import org.openhab.binding.oilfox.handler.OilFoxHandler;
 import org.openhab.binding.oilfox.internal.discovery.OilFoxDiscoveryService;
 import org.openhab.core.config.discovery.DiscoveryService;
+import org.openhab.core.i18n.TimeZoneProvider;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
@@ -32,6 +33,7 @@ import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerFactory;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The {@link OilFoxHandlerFactory} is responsible for creating things and thing
@@ -44,6 +46,17 @@ import org.osgi.service.component.annotations.Component;
 @NonNullByDefault
 public class OilFoxHandlerFactory extends BaseThingHandlerFactory {
 
+    private @Nullable TimeZoneProvider timeZoneProvider;
+
+    @Reference
+    protected void setTimeZoneProvider(TimeZoneProvider timeZoneProvider) {
+        this.timeZoneProvider = timeZoneProvider;
+    }
+
+    protected void unsetTimeZoneProvider(TimeZoneProvider timeZoneProvider) {
+        this.timeZoneProvider = null;
+    }
+
     private Map<ThingUID, ServiceRegistration<?>> discoveryServiceRegs = new HashMap<>();
 
     @Override
@@ -55,11 +68,11 @@ public class OilFoxHandlerFactory extends BaseThingHandlerFactory {
     protected @Nullable ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
         if (OilFoxBindingConstants.SUPPORTED_BRIDGE_TYPES.contains(thingTypeUID)) {
-            OilFoxBridgeHandler handler = new OilFoxBridgeHandler((Bridge) thing);
+            OilFoxBridgeHandler handler = new OilFoxBridgeHandler((Bridge) thing, this.timeZoneProvider);
             registerOilFoxDiscoveryService(handler);
             return handler;
         } else if (thingTypeUID.equals(OilFoxBindingConstants.THING_TYPE_OILFOX)) {
-            return new OilFoxHandler(thing);
+            return new OilFoxHandler(thing, this.timeZoneProvider);
         }
         return null;
     }

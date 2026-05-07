@@ -25,7 +25,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
@@ -36,6 +37,7 @@ import javax.net.ssl.HttpsURLConnection;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.oilfox.internal.OilFoxBridgeConfiguration;
+import org.openhab.core.i18n.TimeZoneProvider;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.ThingStatus;
@@ -68,14 +70,23 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
     private @Nullable ScheduledFuture<?> refreshJob;
     private List<OilFoxStatusListener> oilFoxStatusListeners = new CopyOnWriteArrayList<>();
     private @Nullable String accessToken = null;
-    private LocalDateTime accessTokenTime = LocalDateTime.now();
-    private LocalDateTime lastDeviceRefresh = LocalDateTime.now();
+    private ZonedDateTime lastDeviceRefresh = now();
     private @Nullable String refreshToken = null;
 
-    public OilFoxBridgeHandler(Bridge bridge) {
+    public OilFoxBridgeHandler(Bridge bridge, @Nullable TimeZoneProvider timeZoneProvider) {
         super(bridge);
+        this.timeZoneProvider = timeZoneProvider;
+        this.accessTokenTime = now();
         String bridgeUID = this.getThing().getUID().toString();
         logger.debug("OilFoxBridgeHandler(): bridge UID {}: bridge thing created", bridgeUID);
+    }
+
+    private @Nullable TimeZoneProvider timeZoneProvider;
+    private ZonedDateTime accessTokenTime = ZonedDateTime.now(ZoneId.systemDefault());
+
+    private ZonedDateTime now() {
+        TimeZoneProvider tp = this.timeZoneProvider;
+        return ZonedDateTime.now(tp != null ? tp.getTimeZone() : ZoneId.systemDefault());
     }
 
     private void readStatus() {
@@ -125,14 +136,14 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
         if (command == RefreshType.REFRESH) {
             // prevent to overload API fair use from additional refresh at metering time
             if (channelUID == null) { // called by additional refresh schedule
-                long minutes = MINUTES.between(lastDeviceRefresh, LocalDateTime.now());
+                long minutes = MINUTES.between(lastDeviceRefresh, now());
                 logger.debug("handleCommand(): last additional device refresh {} minutes ago", minutes);
                 if (minutes < 60) { // Fair Use Policy: "Getting the status of all of your device every hour is
                                     // considered to be of fair use and no rate limiting is applied."
                     logger.debug("handleCommand(): too fast refresh, defer request");
                     return;
                 }
-                lastDeviceRefresh = LocalDateTime.now();
+                lastDeviceRefresh = now();
             }
             readStatus();
             return;
@@ -320,7 +331,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
 
     private boolean login() {
         if (refreshToken != null) { // we have a refresh access token, use this
-            long minutes = MINUTES.between(accessTokenTime, LocalDateTime.now());
+            long minutes = MINUTES.between(accessTokenTime, now());
             if (minutes < 15) {
                 logger.debug("login(): access token age {} minutes, no need to refresh", minutes);
                 return true;
@@ -334,7 +345,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                     if (responseObject.isJsonObject()) {
                         JsonObject object = responseObject.getAsJsonObject();
                         accessToken = object.get("access_token").getAsString();
-                        accessTokenTime = LocalDateTime.now();
+                        accessTokenTime = now();
                         refreshToken = object.get("refresh_token").getAsString();
                         logger.trace("login(): access token: {}", accessToken);
                         logger.trace("login(): refresh token: {}", refreshToken);
@@ -368,7 +379,7 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             if (responseObject.isJsonObject()) {
                 JsonObject object = responseObject.getAsJsonObject();
                 accessToken = object.get("access_token").getAsString();
-                accessTokenTime = LocalDateTime.now();
+                accessTokenTime = now();
                 refreshToken = object.get("refresh_token").getAsString();
                 logger.trace("login(): access token: {}", accessToken);
                 logger.trace("login(): refresh token: {}", refreshToken);
