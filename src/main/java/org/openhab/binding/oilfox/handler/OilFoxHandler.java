@@ -116,7 +116,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
             }
         } else {
-            logger.error("initialize(): hwid {]: bridge undefined");
+            logger.error("initialize(): hwid {}: bridge undefined", hwid);
             updateStatus(ThingStatus.OFFLINE);
         }
     }
