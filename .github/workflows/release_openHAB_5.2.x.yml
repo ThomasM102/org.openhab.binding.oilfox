@@ -12,10 +12,10 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '21' ]
-        maven: [ '3.9.11' ]
+        maven: [ '3.9.16' ]
         addons-ref: [ '5.2.x' ]
         addons-branch: [ '5.2.x' ]
-        os: [ 'ubuntu-24.04' ]
+        os: [ 'ubuntu-latest' ]
     name: Build on ${{ matrix.addons-branch }} (Java ${{ matrix.java }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     permissions:
