@@ -364,6 +364,14 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
                     localDeviceRefreshJob.cancel(false);
                 }
 
+                // Check if the calculated refresh time is already in the past
+                if (nextInMinutes <= 0) {
+                    logger.info(
+                            "HWID {}: next metering time (including 5 min buffer) is in the past ({} minutes ago), skipping refresh schedule",
+                            deviceHWID, Math.abs(nextInMinutes));
+                    return;
+                }
+
                 if (nextInMinutes > 0) {
                     logger.debug("onOilFoxRefresh(): HWID {}: adding additional refresh schedule in {} minutes",
                             deviceHWID, nextInMinutes);
