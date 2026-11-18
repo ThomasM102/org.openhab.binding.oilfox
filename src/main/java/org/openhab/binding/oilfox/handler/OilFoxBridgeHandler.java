@@ -120,9 +120,9 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                 }
             } catch (InterruptedIOException e) {
                 logger.debug("readStatus(): request interrupted {}", e.getMessage());
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
+                updateStatus(ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
             } catch (IOException e) {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
+                updateStatus(ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
             }
         }
     }
@@ -231,41 +231,39 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         logger.trace("query(): response {}", element.toString());
                         return element;
                     } catch (InterruptedIOException e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                         logger.error("query(): request interrupted {}", e.getMessage());
                     } catch (IOException e) {
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                         logger.error("query(): IOException {}", e.getMessage());
                     }
                     break;
                 case 401:
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                            "query request failed: password invalid");
+                    updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, "query request failed: password invalid");
                     logger.error("query(): request failed, password invalid");
                     break;
                 case 404:
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    updateStatus(ThingStatusDetail.COMMUNICATION_ERROR,
                             "query request failed: user " + config.email + " not valid");
                     logger.error("query(): request failed, user {} not valid", config.email);
                     break;
                 case 429:
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                            "query request failed: Too Many Requests");
+                    updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, "query request failed: Too Many Requests");
                     logger.error("query(): request failed, Too Many Requests");
                     break;
                 default:
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    updateStatus(ThingStatusDetail.COMMUNICATION_ERROR,
                             "query request failed, response code " + request.getResponseCode());
                     logger.error("query(): request failed, response code {}", request.getResponseCode());
             }
         } catch (URISyntaxException e) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             throw new MalformedURLException("invalid url");
         } catch (InterruptedIOException e) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             logger.error("query(): failed with InterruptedIOException: {}", e.getMessage());
         } catch (IOException e) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             logger.error("query(): failed with IOException: {}", e.getMessage());
         }
         return null;
@@ -306,17 +304,17 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
                         return element;
                     } catch (InterruptedIOException e) {
                         logger.error("queryRefreshToken(): InterruptedIOException {}", e.getMessage());
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                     } catch (IOException e) {
                         logger.error("queryRefreshToken(): IOException {}", e.getMessage());
-                        updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+                        updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
                     }
                     break;
                 default:
                     // refresh token invalid
                     logger.error("queryRefreshToken(): refresh access token failed, unexpected response code {}",
                             request.getResponseCode());
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    updateStatus(ThingStatusDetail.COMMUNICATION_ERROR,
                             "queryRefreshToken(): unexpected response code " + request.getResponseCode());
                     break;
             }
@@ -391,11 +389,11 @@ public class OilFoxBridgeHandler extends BaseBridgeHandler {
             return true;
         } catch (InterruptedIOException e) {
             logger.error("login(): user/password InterruptedIOException: {}", e.getMessage());
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
 
         } catch (IOException e) {
             logger.error("login(): user/password IOException: {}", e.getMessage(), e);
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
+            updateStatus(ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
         }
         return false;
     }

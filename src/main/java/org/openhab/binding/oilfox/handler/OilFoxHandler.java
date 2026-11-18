@@ -91,7 +91,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             hwid = config.hwid;
             if ((hwid == null) || hwid.isEmpty()) {
                 logger.error("initialize(): hwid missing");
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "hwid missing");
+                updateStatus(ThingStatusDetail.CONFIGURATION_ERROR, "hwid missing");
                 return;
             } else {
                 logger.debug("initialize(): {}: set hwid {} from thing configuration", this.getThing().getUID(), hwid);
@@ -113,7 +113,7 @@ public class OilFoxHandler extends BaseThingHandler implements OilFoxStatusListe
             } else {
                 logger.debug("initialize(): thingID: {}, hwid: {}: invalid bridge status: {}", getThing().getUID(),
                         hwid, bridgeStatus);
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
+                updateStatus(ThingStatusDetail.BRIDGE_OFFLINE);
             }
         } else {
             logger.error("initialize(): hwid {}: bridge undefined", hwid);
